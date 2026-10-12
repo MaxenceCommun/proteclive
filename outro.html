@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outro — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&family=Orbitron:wght@700;900&display=swap');
+        
+        body { 
+            margin: 0; 
+            padding: 0; 
+            width: 1920px; 
+            height: 1080px; 
+            background: radial-gradient(circle at center, #024589 0%, #04376b 100%); 
+            color: white; 
+            font-family: 'Poppins', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden; 
+            position: relative; 
+        }
+
+        /* Enveloppe pour le logo et texte de remerciement (animée pour le recentrage) */
+        .main-thanks-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 1.8s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: scale(1);
+            z-index: 10;
+        }
+        
+        /* Quand le générique est fini, on zoome légèrement sur le bloc central */
+        .main-thanks-wrap.centered {
+            transform: scale(1.15);
+        }
+        
+        .logo-end { 
+            margin-bottom: 20px; 
+            animation: hover 4s ease-in-out infinite; 
+        }
+        .logo-end img { 
+            height: 120px; 
+            width: auto; 
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); 
+        }
+
+        .thanks { 
+            font-size: 70px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            text-align: center; 
+            line-height: 1.1;
+        }
+        .thanks span { 
+            color: #f68d20; 
+            display: block; 
+            font-size: 32px; 
+            font-family: 'Orbitron', sans-serif; 
+            letter-spacing: 5px; 
+            margin-top: 10px;
+        }
+
+        /* Conteneur du générique défilant style cinéma */
+        .credits-container {
+            width: 1100px;
+            height: 480px;
+            margin-top: 30px;
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+            /* Masque de dégradé pour faire disparaître les noms en haut et en bas */
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            
+            /* Transitions pour le repliement de fin */
+            transition: opacity 1.2s ease, height 1.8s cubic-bezier(0.25, 1, 0.5, 1), margin-top 1.8s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 1;
+        }
+        
+        /* Élimine le conteneur pour recentrer le bloc principal */
+        .credits-container.collapsed {
+            opacity: 0;
+            height: 0px;
+            margin-top: 0px;
+        }
+        
+        .credits-scroll {
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            text-align: center;
+            will-change: transform;
+        }
+
+        .credits-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .credits-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 26px;
+            color: #f68d20;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 900;
+        }
+
+        .credits-names {
+            font-size: 22px;
+            line-height: 1.8;
+            color: #ffffff;
+            font-weight: 700;
+            word-wrap: break-word;
+            padding: 0 60px;
+        }
+
+        .socials {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 50px;
+            font-size: 22px;
+            background: rgba(0,0,0,0.4);
+            padding: 15px 50px;
+            border-radius: 50px;
+            z-index: 10;
+            border-top: 2px solid #f68d20;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .socials div {
+            display: inline-flex;
+            align-items: center;
+            color: #ffffff;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .socials i {
+            color: #f68d20;
+            margin-right: 12px;
+        }
+
+        @keyframes hover { 
+            0%, 100% { transform: translateY(0); } 
+            50% { transform: translateY(-15px); } 
+        }
+    </style>
+</head>
+<body>
+    <div class="main-thanks-wrap" id="main-thanks-wrap">
+        <div class="logo-end"><img src="images/logo_png.png"></div>
+        <div class="thanks">MERCI À TOUS <span>POUR VOTRE SOUTIEN</span></div>
+    </div>
+    
+    <div class="credits-container" id="credits-container">
+        <div class="credits-scroll" id="credits-scroll">
+            <div class="credits-names">Chargement des crédits...</div>
+        </div>
+    </div>
+
+    <!-- Barre des réseaux sociaux dynamique -->
+    <div class="socials"></div>
+
+    <!-- Chargement de la config et de la BDD -->
+    <script src="get_config.php?format=js"></script>
+    <script src="config/config.js"></script>
+    
+    <script>
+        let animationFrameId;
+
+        async function loadCredits() {
+            try {
+                const response = await fetch('get_session_events.php');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const scrollDiv = document.getElementById('credits-scroll');
+                    scrollDiv.innerHTML = ''; // Vider le conteneur
+
+                    // 1. Nouveaux Followers (Uniquement s'il y en a)
+                    if (data.follows && data.follows.length > 0) {
+                        const sec = document.createElement('div');
+                        sec.className = 'credits-section';
+                        sec.innerHTML = `
+                            <div class="credits-title"><i class="fa-solid fa-heart"></i> Nouveaux Followers</div>
+                            <div class="credits-names">${data.follows.join('<br>')}</div>
+                        `;
+                        scrollDiv.appendChild(sec);
+                    }
+
+                    // 2. Nouveaux Subs (Uniquement s'il y en a)
+                    if (data.subs && data.subs.length > 0) {
+                        const sec = document.createElement('div');
+                        sec.className = 'credits-section';
+                        sec.innerHTML = `
+                            <div class="credits-title"><i class="fa-solid fa-star"></i> Nouveaux abonnés (Subs)</div>
+                            <div class="credits-names">${data.subs.join(' &bull; ')}</div>
+                        `;
+                        scrollDiv.appendChild(sec);
+                    }
+
+                    // 3. Personnes présentes sur le chat (Uniquement s'il y en a)
+                    if (data.chatters && data.chatters.length > 0) {
+                        const sec = document.createElement('div');
+                        sec.className = 'credits-section';
+                        sec.innerHTML = `
+                            <div class="credits-title"><i class="fa-solid fa-comments"></i> Présents sur le chat</div>
+                            <div class="credits-names">${data.chatters.join(' &bull; ')}</div>
+                        `;
+                        scrollDiv.appendChild(sec);
+                    }
+
+                    // Clause de sauvegarde si aucun crédit n'est présent
+                    if (scrollDiv.children.length === 0) {
+                        const sec = document.createElement('div');
+                        sec.className = 'credits-section';
+                        sec.innerHTML = `
+                            <div class="credits-title">Merci pour ce live !</div>
+                            <div class="credits-names">Ravi d'avoir partagé ce moment avec vous. A bientôt !</div>
+                        `;
+                        scrollDiv.appendChild(sec);
+                    }
+
+                    // Lancer l'animation de défilement
+                    startScrolling();
+                }
+            } catch (e) {
+                console.error("Erreur de chargement du générique :", e);
+            }
+        }
+
+        function startScrolling() {
+            const container = document.getElementById('credits-container');
+            const scrollDiv = document.getElementById('credits-scroll');
+            
+            // Démarrer sous la limite visible du conteneur
+            let posY = container.clientHeight;
+            scrollDiv.style.transform = `translateY(${posY}px)`;
+
+            function scroll() {
+                posY -= 1.0; // Déplacement lent de 1 pixel par frame
+                
+                // Si la totalité du générique est sortie du haut, on arrête et on recentre !
+                if (posY < -scrollDiv.scrollHeight) {
+                    cancelAnimationFrame(animationFrameId);
+                    collapseCredits();
+                    return;
+                }
+                
+                scrollDiv.style.transform = `translateY(${posY}px)`;
+                animationFrameId = requestAnimationFrame(scroll);
+            }
+            
+            // Attendre 2 secondes avant de lancer le scroll
+            setTimeout(() => {
+                animationFrameId = requestAnimationFrame(scroll);
+            }, 2000);
+        }
+
+        function collapseCredits() {
+            const container = document.getElementById('credits-container');
+            const thanksWrap = document.getElementById('main-thanks-wrap');
+            
+            // Déclencher les transitions CSS de disparition et de recentrage
+            container.classList.add('collapsed');
+            thanksWrap.classList.add('centered');
+            
+            // Supprimer proprement le conteneur du DOM une fois la transition terminée
+            setTimeout(() => {
+                container.remove();
+            }, 2000);
+        }
+
+        // Lancer au chargement de la page
+        window.addEventListener('DOMContentLoaded', loadCredits);
+    </script>
+</body>
+</html>

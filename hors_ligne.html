@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Hors Ligne — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/logo ProtecLive.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@900&family=Orbitron:wght@700&display=swap');
+        
+        body { 
+            margin: 0; 
+            padding: 0; 
+            width: 1920px; 
+            height: 1080px; 
+            background: radial-gradient(circle at center, #024589 0%, #04376b 100%); 
+            color: white; 
+            font-family: 'Poppins', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden; 
+            position: relative; 
+        }
+
+
+        /* Animation du logo */
+        .logo-container {
+            width: 450px;
+            height: 450px;
+            position: relative;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .logo-img { 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px; 
+            height: auto; 
+            filter: drop-shadow(0 0 40px rgba(0, 45, 114, 0.9)); 
+            animation: hover 4s ease-in-out infinite; 
+            margin: 0;
+            z-index: 12;
+        }
+        
+        /* Anneaux orbitaux style high-tech */
+        .orbit { position: absolute; border: 1px solid rgba(255, 140, 0, 0.3); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotate var(--t) linear infinite; }
+        .orbit-1 { width: 380px; height: 380px; --t: 15s; }
+        .orbit-2 { width: 450px; height: 450px; --t: 20s; border-style: dashed; border-color: rgba(255, 255, 255, 0.1); }
+        
+        /* Message principal */
+        .msg { 
+            font-size: 110px; 
+            font-weight: 900; 
+            font-style: italic; /* Légèrement incliné comme sur l'image */
+            text-transform: uppercase; 
+            z-index: 10; 
+            text-align: center; 
+            line-height: 1.05; 
+            text-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            background: linear-gradient(to bottom, #ffffff 30%, #d8e1e9 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .msg span.sub-top { 
+            color: #f68d20; 
+            -webkit-text-fill-color: #f68d20;
+            display: block; 
+            font-size: 26px; 
+            font-family: 'Poppins', sans-serif; 
+            font-weight: 700;
+            font-style: normal;
+            margin-bottom: 15px; 
+            letter-spacing: 6px; 
+            text-shadow: none;
+            background: none;
+        }
+
+        /* Réseaux sociaux en bas */
+        .socials { 
+            position: absolute; 
+            bottom: 60px; 
+            display: flex; 
+            gap: 50px; 
+            font-size: 22px; 
+            background: rgba(0,0,0,0.4); 
+            padding: 15px 50px; 
+            border-radius: 50px; 
+            z-index: 10; 
+            border-top: 2px solid #f68d20; 
+            backdrop-filter: blur(10px); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .socials i { color: #f68d20; margin-right: 12px; }
+
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes hover { 0%, 100% { transform: translate(-50%, -50%) translateY(0); } 50% { transform: translate(-50%, -50%) translateY(-15px); } }
+    </style>
+</head>
+<body>
+
+
+    <div class="logo-container">
+        <div class="orbit orbit-1"></div>
+        <div class="orbit orbit-2"></div>
+        <img src="images/logo_png.png" class="logo-img">
+    </div>
+
+    <div class="msg"><span class="sub-top">LE STREAM EST ACTUELLEMENT</span>HORS-LIGNE</div>
+    
+    <div class="socials">
+        <!-- Les réseaux sociaux seront injectés dynamiquement par config.js -->
+    </div>
+
+    <!-- Configuration globale -->
+    <script src="get_config.php?format=js"></script>
+    <script src="config/config.js"></script>
+
+</body>
+</html>
+
+

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Overlays — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/logo ProtecLive.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&family=Orbitron:wght@700;900&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at center, #024589 0%, #04376b 100%);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 20px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Arrière-plan animé */
+        .bg-glow {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 30%, rgba(255, 140, 0, 0.08) 0%, transparent 60%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* En-tête */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .logo-wrap {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-img {
+            width: 90px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.4));
+            animation: hover 4s ease-in-out infinite;
+            z-index: 5;
+        }
+
+        .orbit {
+            position: absolute;
+            border: 1px solid rgba(255, 140, 0, 0.2);
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: rotate var(--t) linear infinite;
+        }
+        .orbit-1 { width: 130px; height: 130px; --t: 12s; }
+        .orbit-2 { width: 160px; height: 160px; --t: 18s; border-style: dashed; }
+
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 10px 0;
+            background: linear-gradient(to bottom, #ffffff 30%, #d8e1e9 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            font-family: 'Orbitron', sans-serif;
+            color: #f68d20;
+            -webkit-text-fill-color: #f68d20;
+            font-size: 14px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(246, 141, 32, 0.3);
+            background: none;
+        }
+
+        /* Bouton Régie géant */
+        .regie-banner {
+            background: linear-gradient(135deg, rgba(0, 45, 114, 0.5) 0%, rgba(246, 141, 32, 0.15) 100%);
+            border: 1px solid rgba(246, 141, 32, 0.3);
+            border-left: 5px solid #f68d20;
+            border-radius: 15px;
+            padding: 30px 40px;
+            width: 100%;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s;
+            text-decoration: none;
+            color: white;
+        }
+
+        .regie-banner:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 45px rgba(255, 140, 0, 0.2);
+            border-color: rgba(255, 140, 0, 0.6);
+        }
+
+        .regie-info h2 {
+            margin: 0 0 5px 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #f68d20;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .regie-info h2 i {
+            animation: pulse-glow 2s infinite;
+        }
+
+        .regie-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #e5e7eb;
+        }
+
+        .btn-regie-link {
+            background: #f68d20;
+            color: #050505;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 5px 15px rgba(255, 140, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); text-shadow: 0 0 10px #f68d20; }
+            50% { opacity: 0.6; transform: scale(1.05); text-shadow: 0 0 20px #f68d20; }
+        }
+
+        /* Sections Grid */
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            color: #f68d20;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            width: 100%;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 140, 0, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            width: 100%;
+            margin-bottom: 50px;
+        }
+
+        /* Cartes d'overlays */
+        .card {
+            background: rgba(0, 45, 114, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 25px;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            background: rgba(0, 45, 114, 0.35);
+            border-color: rgba(255, 140, 0, 0.3);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card-header i {
+            font-size: 24px;
+            color: #f68d20;
+            width: 35px;
+            height: 35px;
+            background: rgba(255, 140, 0, 0.1);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card p {
+            margin: 0 0 20px 0;
+            font-size: 13px;
+            color: #d1d5db;
+            line-height: 1.5;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .btn-primary {
+            background: rgba(255, 140, 0, 0.15);
+            color: #f68d20;
+            border: 1px solid rgba(255, 140, 0, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: #f68d20;
+            color: #050505;
+            box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 25px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .regie-banner {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            .regie-info h2 {
+                justify-content: center;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    
+    <div class="container">
+        <!-- En-tête -->
+        <div class="header">
+            <div class="logo-wrap">
+                <div class="orbit orbit-1"></div>
+                <div class="orbit orbit-2"></div>
+                <img src="images/logo_png.png" alt="Logo" class="logo-img">
+            </div>
+            <h1>Protec Live</h1>
+            <div class="subtitle">Portail des Overlays</div>
+        </div>
+
+        <!-- Bannière Régie géante -->
+        <a href="login.php" class="regie-banner">
+            <div class="regie-info">
+                <h2><i class="fa-solid fa-tower-broadcast"></i> Régie Live Interactive</h2>
+                <p>Modifiez les informations et affichez/masquez les HUD à l'écran en temps réel.</p>
+            </div>
+            <div class="btn-regie-link">
+                Accéder à la régie <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </a>
+
+        <!-- Section Écrans Principaux -->
+        <div class="section-title">Écrans OBS Principaux (1920x1080)</div>
+        <div class="grid">
+            
+            <!-- Discussion -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-comments"></i>
+                    <h3>Scène Discussion</h3>
+                </div>
+                <p>HUD pour la discussion avec logo déplaçable, widgets twitch (dernier sub/follow) et ticker défilant.</p>
+                <div class="card-actions">
+                    <a href="discussion.html" target="_blank" class="btn btn-primary">Ouvrir l'écran</a>
+                </div>
+            </div>
+
+            <!-- Hors Ligne -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-power-off"></i>
+                    <h3>Scène Hors Ligne</h3>
+                </div>
+                <p>Écran de veille ou d'attente hors ligne avec les réseaux sociaux.</p>
+                <div class="card-actions">
+                    <a href="hors_ligne.html" target="_blank" class="btn btn-primary">Ouvrir l'écran</a>
+                </div>
+            </div>
+
+            <!-- Outro -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    <h3>Scène d'Outro</h3>
+                </div>
+                <p>Écran de remerciement et de fin de live avec statistiques Twitch.</p>
+                <div class="card-actions">
+                    <a href="outro.html" target="_blank" class="btn btn-primary">Ouvrir l'écran</a>
+                </div>
+            </div>
+
+            <!-- Caméras VDO.Ninja -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-video"></i>
+                    <h3>Scène Caméras</h3>
+                </div>
+                <p>Écran de diffusion des webcams des intervenants via VDO.Ninja avec layouts Solo/Duo/Mosaïque.</p>
+                <div class="card-actions">
+                    <a href="camera.html" target="_blank" class="btn btn-primary">Ouvrir l'écran</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Modules Dynamiques -->
+        <div class="section-title">Modules HUD overlays</div>
+        <div class="grid">
+            
+            <!-- Sujet -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <h3>HUD Sujet</h3>
+                </div>
+                <p>Bandeau horizontal de discussion qui glisse du bas (1920x1080, positionné à bottom: 45px).</p>
+                <div class="card-actions">
+                    <a href="sujet.html" target="_blank" class="btn btn-primary">Ouvrir l'overlay</a>
+                </div>
+            </div>
+
+            <!-- Intervenants 1 & 2 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-users"></i>
+                    <h3>Intervenants 1 & 2</h3>
+                </div>
+                <p>Widgets d'intervenants compacts (taille recommandée 600x120px) gérés dynamiquement par ID (?id=1 ou 2).</p>
+                <div class="card-actions">
+                    <a href="intervenant.html?id=1" target="_blank" class="btn btn-primary">Int. 1</a>
+                    <a href="intervenant.html?id=2" target="_blank" class="btn btn-primary">Int. 2</a>
+                </div>
+            </div>
+
+            <!-- Intervenants 3 & 4 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                    <h3>Intervenants 3 & 4</h3>
+                </div>
+                <p>Widgets supplémentaires d'intervenants pour gérer les personnes 3 et 4 (?id=3 ou 4).</p>
+                <div class="card-actions">
+                    <a href="intervenant.html?id=3" target="_blank" class="btn btn-primary">Int. 3</a>
+                    <a href="intervenant.html?id=4" target="_blank" class="btn btn-primary">Int. 4</a>
+                </div>
+            </div>
+
+            <!-- Objectif Live (Dons / Followers / Subs) -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa-solid fa-bullseye"></i>
+                    <h3>Objectif Live</h3>
+                </div>
+                <p>Overlay dédié pour l'objectif de live (Cagnotte/Dons avec titre personnalisable, Followers ou Subs). 1920x1080 transparent.</p>
+                <div class="card-actions">
+                    <a href="goal.html" target="_blank" class="btn btn-primary">Ouvrir l'overlay</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pied de page -->
+        <div class="footer">
+            PROTEC LIVE &copy; 2026 &bull; PROTECTION CIVILE
+        </div>
+    </div>
+</body>
+</html>
+
+

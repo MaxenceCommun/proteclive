@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUD ETS 2 — Télémétrie Protec Live</title>
+    <!-- FontAwesome 6 & Polices Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pc-blue: #04376b;
+            --pc-blue-dark: #022244;
+            --pc-blue-light: #0d4b8a;
+            --pc-orange: #f68d20;
+            --pc-orange-glow: rgba(246, 141, 32, 0.45);
+            --danger-red: #ef4444;
+            --warning-amber: #f59e0b;
+            --success-green: #10b981;
+            --card-bg: rgba(4, 55, 107, 0.90);
+            --border-card: rgba(246, 141, 32, 0.40);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 1920px;
+            height: 1080px;
+            background: transparent;
+            font-family: 'Poppins', sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+        }
+
+        /* Conteneur principal */
+        #ets2-hud-container {
+            position: absolute;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+        }
+
+        /* =========================================================
+           DISPOSITION 1 : BANDEAU BAS (BOTTOM BAR) - PAR DÉFAUT
+           ========================================================= */
+        .layout-bar {
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1680px;
+            max-width: 95vw;
+        }
+
+        .layout-bar .hud-panel {
+            background: linear-gradient(135deg, rgba(2, 34, 68, 0.94) 0%, rgba(4, 55, 107, 0.92) 100%);
+            border: 2px solid var(--border-card);
+            border-top: 3px solid var(--pc-orange);
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 25px rgba(246, 141, 32, 0.15);
+            display: grid;
+            grid-template-columns: 310px 1fr 1fr 330px;
+            gap: 16px;
+            padding: 10px 18px;
+            align-items: center;
+        }
+
+        /* =========================================================
+           DISPOSITION 2 : BANDEAU HAUT (TOP BAR)
+           ========================================================= */
+        .layout-top-bar {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1680px;
+            max-width: 95vw;
+        }
+        .layout-top-bar .hud-panel {
+            background: linear-gradient(135deg, rgba(2, 34, 68, 0.94) 0%, rgba(4, 55, 107, 0.92) 100%);
+            border: 2px solid var(--border-card);
+            border-bottom: 3px solid var(--pc-orange);
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), 0 0 25px rgba(246, 141, 32, 0.15);
+            display: grid;
+            grid-template-columns: 310px 1fr 1fr 330px;
+            gap: 16px;
+            padding: 10px 18px;
+            align-items: center;
+        }
+
+        /* =========================================================
+           DISPOSITION 3 : CARTE DASHBOARD (SIDE CARD BAS-GAUCHE)
+           ========================================================= */
+        .layout-card {
+            bottom: 35px;
+            left: 35px;
+            width: 440px;
+        }
+
+        .layout-card .hud-panel {
+            background: linear-gradient(180deg, rgba(2, 34, 68, 0.96) 0%, rgba(4, 55, 107, 0.94) 100%);
+            border: 2px solid var(--border-card);
+            border-left: 5px solid var(--pc-orange);
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* =========================================================
+           BLOCS & MODULES INTERNES DU HUD
+           ========================================================= */
+        .hud-module {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .module-divider {
+            height: 52px;
+            width: 1px;
+            background: linear-gradient(180deg, transparent 0%, rgba(246, 141, 32, 0.4) 50%, transparent 100%);
+            margin-right: 16px;
+        }
+
+        .layout-card .module-divider {
+            display: none;
+        }
+
+        /* ---------------------------------------------------------
+           MODULE 1 : VITESSE, RAPPORT & SIGNAUX
+           --------------------------------------------------------- */
+        .speed-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .speed-gauge-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 105px;
+        }
+
+        .speed-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 46px;
+            font-weight: 900;
+            line-height: 1;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+            letter-spacing: -1px;
+        }
+
+        .speed-number.speeding {
+            color: var(--danger-red);
+            text-shadow: 0 0 18px rgba(239, 68, 68, 0.85);
+            animation: pulseSpeeding 0.6s infinite alternate;
+        }
+
+        @keyframes pulseSpeeding {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .speed-unit {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--pc-orange);
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        /* Panneau limitation de vitesse rond style européen */
+        .speed-limit-sign {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 4px solid #dc2626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            font-size: 15px;
+            color: #111827;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .speed-sub-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .gear-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #38bdf8;
+            width: fit-content;
+        }
+
+        .cruise-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cruise-badge.active {
+            background: rgba(16, 185, 129, 0.25);
+            border: 1px solid rgba(16, 185, 129, 0.6);
+            color: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Clignotants & Feux */
+        .light-indicators {
+            display: flex;
+            gap: 6px;
+            margin-top: 3px;
+        }
+
+        .indicator-icon {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #64748b;
+            transition: all 0.15s ease;
+        }
+
+        .indicator-icon.blinker-active {
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.25);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+            animation: blinkerFlash 0.75s infinite;
+        }
+
+        .indicator-icon.beacon-active {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.25);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+            animation: beaconFlash 0.5s infinite alternate;
+        }
+
+        .indicator-icon.lights-active {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.25);
+        }
+
+        @keyframes blinkerFlash {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0.2; }
+        }
+
+        @keyframes beaconFlash {
+            from { transform: scale(0.95); opacity: 0.7; }
+            to { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 6px #f59e0b); }
+        }
+
+        /* ---------------------------------------------------------
+           MODULE 2 : ITINÉRAIRE & NAVIGATION (GPS)
+           --------------------------------------------------------- */
+        .route-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--pc-orange);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .route-cities {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .route-arrow {
+            color: var(--pc-orange);
+            font-size: 13px;
+        }
+
+        .route-stats-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-top: 2px;
+        }
+
+        .route-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .route-stat i {
+            color: var(--pc-orange);
+            font-size: 11px;
+        }
+
+        .route-stat-val {
+            font-weight: 700;
+            color: #ffffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+        }
+
+        /* ---------------------------------------------------------
+           MODULE 3 : CARGAISON & MISSION (JOB)
+           --------------------------------------------------------- */
+        .cargo-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cargo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--pc-orange);
+            text-transform: uppercase;
+        }
+
+        .cargo-name-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cargo-mass-tag {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            background: rgba(246, 141, 32, 0.25);
+            border: 1px solid rgba(246, 141, 32, 0.5);
+            color: #fbd38d;
+            padding: 1px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .cargo-companies {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cargo-income {
+            color: #10b981;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+        }
+
+        /* ---------------------------------------------------------
+           MODULE 4 : SANTÉ DU CAMION & CARBURANT
+           --------------------------------------------------------- */
+        .truck-health-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 250px;
+        }
+
+        .health-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .health-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #cbd5e1;
+        }
+
+        .health-label i {
+            font-size: 11px;
+            width: 14px;
+            text-align: center;
+        }
+
+        .health-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+
+        /* Couleurs d'usure / dégâts */
+        .damage-low { background: linear-gradient(90deg, #10b981, #22c55e); }
+        .damage-med { background: linear-gradient(90deg, #f59e0b, #ea580c); }
+        .damage-high {
+            background: linear-gradient(90deg, #ef4444, #b91c1c);
+            animation: pulseDamage 0.5s infinite alternate;
+        }
+
+        @keyframes pulseDamage {
+            from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+            to { box-shadow: 0 0 15px rgba(239, 68, 68, 1); }
+        }
+
+        /* Barre carburant */
+        .fuel-fill {
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+        }
+
+        .fuel-fill.fuel-warning {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            animation: pulseFuel 0.7s infinite alternate;
+        }
+
+        @keyframes pulseFuel {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+
+        /* Statut connexion & Titre */
+        .hud-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+        }
+
+        .status-dot.demo {
+            background: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+        }
+
+        /* Mode Pause ou Aucune Mission */
+        .no-job-text {
+            color: #94a3b8;
+            font-style: italic;
+            font-size: 13px;
+        }
+
+        /* Bouton discret de bascule Démo (accessible pour tests) */
+        #demo-toggle-btn {
+            position: absolute;
+            top: -24px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #94a3b8;
+            font-size: 9px;
+            font-family: 'Orbitron', sans-serif;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+
+        body:hover #demo-toggle-btn {
+            opacity: 1;
+        }
+
+        #demo-toggle-btn:hover {
+            color: #ffffff;
+            border-color: var(--pc-orange);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ets2-hud-container" class="layout-bar">
+        <!-- Bouton discret de test -->
+        <button id="demo-toggle-btn" onclick="toggleDemoMode()" title="Basculer entre le flux ETS2 direct et le mode démo de test">
+            MODE TEST DÉMO
+        </button>
+
+        <div class="hud-panel">
+            
+            <!-- MODULE 1 : VITESSE, RAPPORT & CONDUITE -->
+            <div class="hud-module">
+                <div class="speed-block">
+                    <div class="speed-gauge-wrap">
+                        <div class="speed-number" id="val-speed">0</div>
+                        <div class="speed-unit">KM / H</div>
+                    </div>
+
+                    <!-- Panneau limitation de vitesse -->
+                    <div class="speed-limit-sign" id="val-speed-limit" title="Vitesse limite autorisée">
+                        80
+                    </div>
+
+                    <div class="speed-sub-info">
+                        <div style="display: flex; gap: 4px;">
+                            <span class="gear-badge" id="val-gear" title="Rapport de vitesse engagé">
+                                <i class="fa-solid fa-gear"></i> <span id="val-gear-text">N</span>
+                            </span>
+                            <span class="cruise-badge" id="val-cruise" title="Régulateur de vitesse">
+                                <i class="fa-solid fa-gauge-high"></i> <span id="val-cruise-speed">OFF</span>
+                            </span>
+                        </div>
+
+                        <!-- Voyants clignotants et feux -->
+                        <div class="light-indicators">
+                            <div class="indicator-icon" id="ind-blinker-left" title="Clignotant Gauche">
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </div>
+                            <div class="indicator-icon" id="ind-lights" title="Feux de croisement">
+                                <i class="fa-solid fa-lightbulb"></i>
+                            </div>
+                            <div class="indicator-icon" id="ind-beacon" title="Gyrophares / Gyros">
+                                <i class="fa-solid fa-tower-broadcast"></i>
+                            </div>
+                            <div class="indicator-icon" id="ind-blinker-right" title="Clignotant Droit">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 2 : ITINÉRAIRE & GPS -->
+            <div class="hud-module">
+                <div class="module-divider"></div>
+                <div class="route-block">
+                    <div class="route-header">
+                        <i class="fa-solid fa-map-location-dot"></i> Itinéraire & Navigation
+                    </div>
+                    <div class="route-cities" id="val-route-cities">
+                        <span id="val-city-source">Paris</span>
+                        <i class="fa-solid fa-angles-right route-arrow"></i>
+                        <span id="val-city-dest">Lyon</span>
+                    </div>
+                    <div class="route-stats-row">
+                        <div class="route-stat" title="Distance restante">
+                            <i class="fa-solid fa-route"></i>
+                            <span class="route-stat-val" id="val-nav-dist">462 km</span>
+                        </div>
+                        <div class="route-stat" title="Temps restant estimé (ETA)">
+                            <i class="fa-regular fa-clock"></i>
+                            <span class="route-stat-val" id="val-nav-time">5h 10m</span>
+                        </div>
+                        <div class="route-stat" title="Prochaine pause obligatoire">
+                            <i class="fa-solid fa-bed"></i>
+                            <span class="route-stat-val" id="val-nav-rest">Repos dans 3h 40m</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3 : CARGAISON & MISSION -->
+            <div class="hud-module">
+                <div class="module-divider"></div>
+                <div class="cargo-block">
+                    <div class="cargo-header">
+                        <span><i class="fa-solid fa-truck-ramp-box"></i> Fret & Mission</span>
+                        <span class="cargo-income" id="val-job-income">12 450 €</span>
+                    </div>
+                    <div class="cargo-name-row">
+                        <span id="val-cargo-name">Matériel de Secours & Tentes</span>
+                        <span class="cargo-mass-tag" id="val-cargo-mass">14.5 t</span>
+                    </div>
+                    <div class="cargo-companies">
+                        <span id="val-company-source">Protection Civile FNPC</span>
+                        <i class="fa-solid fa-arrow-right" style="font-size: 9px; color: var(--pc-orange);"></i>
+                        <span id="val-company-dest">Dispositif d'Urgence</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 4 : SANTÉ CAMION, CARBURANT & STATUT -->
+            <div class="hud-module">
+                <div class="module-divider"></div>
+                <div class="truck-health-block">
+                    
+                    <!-- Carburant -->
+                    <div>
+                        <div class="health-row">
+                            <span class="health-label"><i class="fa-solid fa-gas-pump" style="color: #38bdf8;"></i> Carburant</span>
+                            <span style="font-family: 'Orbitron', sans-serif;" id="val-fuel-text">450 L (1 240 km)</span>
+                        </div>
+                        <div class="health-bar-bg" style="margin-top: 3px;">
+                            <div class="health-bar-fill fuel-fill" id="bar-fuel" style="width: 65%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Dégâts / Usure -->
+                    <div>
+                        <div class="health-row">
+                            <span class="health-label"><i class="fa-solid fa-screwdriver-wrench" id="icon-damage" style="color: #10b981;"></i> Dégâts</span>
+                            <span style="font-family: 'Orbitron', sans-serif;" id="val-damage-text">0.0 % (Impeccable)</span>
+                        </div>
+                        <div class="health-bar-bg" style="margin-top: 3px;">
+                            <div class="health-bar-fill damage-low" id="bar-damage" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Statut du jeu -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                        <div class="hud-status-badge">
+                            <span class="status-dot connected" id="status-indicator-dot"></span>
+                            <span id="status-text">ETS 2 CONNECTÉ</span>
+                        </div>
+                        <span id="val-truck-model" style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">
+                            Scania S 730
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script de logique télémétrique ETS 2 & Synchronisation Régie -->
+    <script>
+        // Paramètres URL (ex: ?layout=bar, ?layout=top-bar, ?layout=card, ?demo=1)
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentLayout = urlParams.get('layout') || 'bar';
+        let isDemoMode = urlParams.get('demo') === '1';
+        let lastSuccessfulFetch = 0;
+        let ets2Endpoints = [
+            'http://localhost:25555/api/ets2/telemetry', // Funbit ETS2 Telemetry Server
+            'http://127.0.0.1:25555/api/ets2/telemetry',
+            'http://localhost:25556/api/telemetry',      // Relais local ProtecLive
+            'http://127.0.0.1:25556/api/telemetry'
+        ];
+        let currentEndpointIdx = 0;
+
+        // Éléments du DOM
+        const container = document.getElementById('ets2-hud-container');
+        const elSpeed = document.getElementById('val-speed');
+        const elSpeedLimit = document.getElementById('val-speed-limit');
+        const elGear = document.getElementById('val-gear-text');
+        const elCruise = document.getElementById('val-cruise');
+        const elCruiseSpeed = document.getElementById('val-cruise-speed');
+        const indBlinkerLeft = document.getElementById('ind-blinker-left');
+        const indBlinkerRight = document.getElementById('ind-blinker-right');
+        const indLights = document.getElementById('ind-lights');
+        const indBeacon = document.getElementById('ind-beacon');
+
+        const elCitySource = document.getElementById('val-city-source');
+        const elCityDest = document.getElementById('val-city-dest');
+        const elNavDist = document.getElementById('val-nav-dist');
+        const elNavTime = document.getElementById('val-nav-time');
+        const elNavRest = document.getElementById('val-nav-rest');
+
+        const elCargoName = document.getElementById('val-cargo-name');
+        const elCargoMass = document.getElementById('val-cargo-mass');
+        const elCompSource = document.getElementById('val-company-source');
+        const elCompDest = document.getElementById('val-company-dest');
+        const elJobIncome = document.getElementById('val-job-income');
+
+        const elFuelText = document.getElementById('val-fuel-text');
+        const barFuel = document.getElementById('bar-fuel');
+        const elDamageText = document.getElementById('val-damage-text');
+        const barDamage = document.getElementById('bar-damage');
+        const iconDamage = document.getElementById('icon-damage');
+        const dotStatus = document.getElementById('status-indicator-dot');
+        const textStatus = document.getElementById('status-text');
+        const elTruckModel = document.getElementById('val-truck-model');
+
+        // Application du layout initial
+        function applyLayout(layoutName) {
+            container.className = '';
+            if (layoutName === 'card') {
+                container.classList.add('layout-card');
+            } else if (layoutName === 'top-bar') {
+                container.classList.add('layout-top-bar');
+            } else {
+                container.classList.add('layout-bar');
+            }
+        }
+        applyLayout(currentLayout);
+
+        // Bascule interactive du mode démo
+        function toggleDemoMode() {
+            isDemoMode = !isDemoMode;
+            const btn = document.getElementById('demo-toggle-btn');
+            if (btn) btn.textContent = isDemoMode ? "RETOURNER AU DIRECT" : "MODE TEST DÉMO";
+        }
+
+        // =========================================================================
+        // SIMULATEUR DÉMO TEMPS RÉEL (Pour tests instantanés sans lancer le jeu)
+        // =========================================================================
+        let demoTicks = 0;
+        let demoSpeed = 82;
+        let demoDistance = 462;
+        let demoFuel = 680;
+        let demoDamage = 2.4;
+
+        function runDemoStep() {
+            demoTicks++;
+            // Simulation de variation de conduite réaliste
+            demoSpeed += (Math.random() - 0.48) * 2.2;
+            demoSpeed = Math.max(0, Math.min(92, demoSpeed));
+            
+            // Consommation et distance qui défile
+            demoDistance = Math.max(0, demoDistance - 0.05);
+            demoFuel = Math.max(50, demoFuel - 0.015);
+
+            const blinkerLeft = (demoTicks % 40 > 25);
+            const cruiseOn = demoSpeed > 70;
+
+            const demoData = {
+                game: { connected: true, paused: false },
+                truck: {
+                    make: "Scania",
+                    model: "S 730 V8",
+                    speed: Math.round(demoSpeed * 10) / 10,
+                    cruiseControlSpeed: 80,
+                    cruiseControlOn: cruiseOn,
+                    displayedGear: demoSpeed > 75 ? 12 : (demoSpeed > 60 ? 10 : 8),
+                    fuel: Math.round(demoFuel),
+                    fuelCapacity: 1200,
+                    fuelWarningOn: false,
+                    wearEngine: 0.02,
+                    wearChassis: 0.03,
+                    wearCabin: 0.01,
+                    wearTransmission: 0.01,
+                    wearWheels: 0.04,
+                    blinkerLeftActive: blinkerLeft,
+                    blinkerRightActive: false,
+                    lightsBeamLowOn: true,
+                    lightsBeaconOn: true
+                },
+                trailer: {
+                    attached: true,
+                    wearChassis: 0.02,
+                    wearWheels: 0.02
+                },
+                job: {
+                    cargo: "Matériel Médical & Tentes Secours",
+                    cargoMass: 14500, // 14.5 t
+                    sourceCity: "Rennes",
+                    sourceCompany: "Protection Civile",
+                    destinationCity: "Strasbourg",
+                    destinationCompany: "Dispositif Urgence",
+                    income: 14850
+                },
+                navigation: {
+                    speedLimit: 80,
+                    estimatedDistance: Math.round(demoDistance * 1000),
+                    estimatedTime: Math.round(demoDistance * 42) // secondes
+                }
+            };
+
+            renderTelemetry(demoData, true);
+        }
+
+        // =========================================================================
+        // RENDU DES DONNÉES DE TÉLÉMÉTRIE SUR L'OVERLAY
+        // =========================================================================
+        function renderTelemetry(data, isSimulated = false) {
+            if (!data) return;
+
+            // Statut connexion
+            if (isSimulated) {
+                dotStatus.className = 'status-dot demo';
+                textStatus.textContent = 'MODE TEST (DÉMO)';
+            } else {
+                dotStatus.className = 'status-dot connected';
+                textStatus.textContent = 'ETS 2 CONNECTÉ';
+            }
+
+            const truck = data.truck || {};
+            const nav = data.navigation || {};
+            const job = data.job || {};
+            const trailer = data.trailer || {};
+
+            // 1. Vitesse & Régulateur
+            const speedKmH = Math.max(0, Math.round(truck.speed || 0));
+            elSpeed.textContent = speedKmH;
+
+            const speedLimit = Math.round(nav.speedLimit || 80);
+            elSpeedLimit.textContent = speedLimit > 0 ? speedLimit : '--';
+
+            // Alerte excès de vitesse (> 5 km/h au-dessus de la limitation)
+            if (speedLimit > 0 && speedKmH > speedLimit + 4) {
+                elSpeed.classList.add('speeding');
+            } else {
+                elSpeed.classList.remove('speeding');
+            }
+
+            // Rapport de boîte
+            const rawGear = truck.displayedGear || truck.gear || 0;
+            if (rawGear > 0) {
+                elGear.textContent = 'D' + rawGear;
+            } else if (rawGear < 0) {
+                elGear.textContent = 'R' + Math.abs(rawGear);
+            } else {
+                elGear.textContent = 'N';
+            }
+
+            // Régulateur (Cruise Control)
+            if (truck.cruiseControlOn && truck.cruiseControlSpeed > 0) {
+                elCruise.classList.add('active');
+                elCruiseSpeed.textContent = Math.round(truck.cruiseControlSpeed) + ' KM/H';
+            } else {
+                elCruise.classList.remove('active');
+                elCruiseSpeed.textContent = 'OFF';
+            }
+
+            // Signaux lumineux
+            if (truck.blinkerLeftActive || truck.blinkerLeftOn) {
+                indBlinkerLeft.classList.add('blinker-active');
+            } else {
+                indBlinkerLeft.classList.remove('blinker-active');
+            }
+
+            if (truck.blinkerRightActive || truck.blinkerRightOn) {
+                indBlinkerRight.classList.add('blinker-active');
+            } else {
+                indBlinkerRight.classList.remove('blinker-active');
+            }
+
+            if (truck.lightsBeamLowOn || truck.lightsBeamHighOn || truck.lightsParkingOn) {
+                indLights.classList.add('lights-active');
+            } else {
+                indLights.classList.remove('lights-active');
+            }
+
+            if (truck.lightsBeaconOn) {
+                indBeacon.classList.add('beacon-active');
+            } else {
+                indBeacon.classList.remove('beacon-active');
+            }
+
+            // Modèle de camion
+            const make = truck.make || '';
+            const model = truck.model || '';
+            if (make || model) {
+                elTruckModel.textContent = (make + ' ' + model).trim();
+            }
+
+            // 2. Navigation & Itinéraire
+            if (job.sourceCity && job.destinationCity) {
+                elCitySource.textContent = job.sourceCity;
+                elCityDest.textContent = job.destinationCity;
+            } else {
+                elCitySource.textContent = "Trajet Libre";
+                elCityDest.textContent = "En Patrouille";
+            }
+
+            // Distance restante
+            const distMeters = nav.estimatedDistance || 0;
+            if (distMeters > 0) {
+                const distKm = Math.round(distMeters / 1000);
+                elNavDist.textContent = distKm.toLocaleString('fr-FR') + ' km';
+            } else {
+                elNavDist.textContent = '-- km';
+            }
+
+            // Temps restant ETA
+            const timeSec = nav.estimatedTime || 0;
+            if (timeSec > 0) {
+                const hours = Math.floor(timeSec / 3600);
+                const mins = Math.floor((timeSec % 3600) / 60);
+                elNavTime.textContent = `${hours}h ${mins.toString().padStart(2, '0')}m`;
+            } else {
+                elNavTime.textContent = '--';
+            }
+
+            // 3. Cargaison & Mission
+            if (job.cargo && job.cargo !== '') {
+                elCargoName.textContent = job.cargo;
+                const massKg = job.cargoMass || 0;
+                const massTonnes = (massKg / 1000).toFixed(1);
+                elCargoMass.textContent = massTonnes + ' t';
+                elCargoMass.style.display = 'inline-block';
+
+                elCompSource.textContent = job.sourceCompany || 'Départ';
+                elCompDest.textContent = job.destinationCompany || 'Arrivée';
+
+                if (job.income && job.income > 0) {
+                    elJobIncome.textContent = job.income.toLocaleString('fr-FR') + ' €';
+                } else {
+                    elJobIncome.textContent = 'Mission Bénévole';
+                }
+            } else {
+                elCargoName.textContent = "Aucune remorque attachée";
+                elCargoMass.style.display = 'none';
+                elCompSource.textContent = "Trajet à vide";
+                elCompDest.textContent = "Recherche de fret";
+                elJobIncome.textContent = "-- €";
+            }
+
+            // 4. Carburant & Autonomie
+            const fuelLitres = Math.round(truck.fuel || 0);
+            const fuelCap = Math.max(1, Math.round(truck.fuelCapacity || 1200));
+            const fuelPct = Math.min(100, Math.max(0, Math.round((fuelLitres / fuelCap) * 100)));
+            
+            // Calcul approximatif autonomie (moyenne 33L/100km pour un semi-remorque)
+            const estimatedFuelKm = Math.round((fuelLitres / 33) * 100);
+            elFuelText.textContent = `${fuelLitres} L (${estimatedFuelKm} km)`;
+            barFuel.style.width = fuelPct + '%';
+
+            if (fuelPct < 15 || truck.fuelWarningOn) {
+                barFuel.classList.add('fuel-warning');
+            } else {
+                barFuel.classList.remove('fuel-warning');
+            }
+
+            // 5. Calcul des Dégâts Totaux (Camion + Remorque)
+            // Moyenne pondérée d'usure du moteur, châssis, cabine, boîte et remorque
+            const wearTruck = Math.max(
+                truck.wearEngine || 0,
+                truck.wearChassis || 0,
+                truck.wearTransmission || 0,
+                truck.wearCabin || 0
+            );
+            const wearTrailer = trailer.attached ? (trailer.wearChassis || 0) : 0;
+            const totalDamage = Math.min(100, Math.max(wearTruck, wearTrailer) * 100);
+            const roundedDamage = totalDamage.toFixed(1);
+
+            barDamage.style.width = Math.min(100, totalDamage) + '%';
+            barDamage.className = 'health-bar-fill';
+
+            if (totalDamage <= 2) {
+                barDamage.classList.add('damage-low');
+                iconDamage.style.color = '#10b981';
+                elDamageText.textContent = roundedDamage + '% (Parfait)';
+                elDamageText.style.color = '#cbd5e1';
+            } else if (totalDamage <= 15) {
+                barDamage.classList.add('damage-med');
+                iconDamage.style.color = '#f59e0b';
+                elDamageText.textContent = roundedDamage + '% (Légers dégâts)';
+                elDamageText.style.color = '#f59e0b';
+            } else {
+                barDamage.classList.add('damage-high');
+                iconDamage.style.color = '#ef4444';
+                elDamageText.textContent = roundedDamage + '% (CRASH / AVARIÉ)';
+                elDamageText.style.color = '#ef4444';
+            }
+        }
+
+        // =========================================================================
+        // SCRUTATION DU SERVEUR DE TÉLÉMÉTRIE ETS 2
+        // =========================================================================
+        async function fetchTelemetry() {
+            if (isDemoMode) {
+                runDemoStep();
+                return;
+            }
+
+            const endpoint = ets2Endpoints[currentEndpointIdx];
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 650);
+
+                const res = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    lastSuccessfulFetch = Date.now();
+                    renderTelemetry(data, false);
+                } else {
+                    throw new Error("HTTP " + res.status);
+                }
+            } catch (err) {
+                // Si l'endpoint courant échoue, tester le suivant au cycle d'après
+                currentEndpointIdx = (currentEndpointIdx + 1) % ets2Endpoints.length;
+
+                // Si aucune donnée reçue depuis plus de 4 secondes, basculer en mode démo / veille
+                if (Date.now() - lastSuccessfulFetch > 4000) {
+                    dotStatus.className = 'status-dot';
+                    dotStatus.style.background = '#64748b';
+                    textStatus.textContent = 'EN ATTENTE D’ETS 2...';
+                    
+                    // Si on est en direct mais que le jeu n'est pas lancé, on anime doucement en démo
+                    // pour que le streamer ait toujours un overlay sublime à l'écran
+                    runDemoStep();
+                }
+            }
+        }
+
+        // Boucle d'actualisation fluide (4 fois par seconde pour réactivité optimale)
+        setInterval(fetchTelemetry, 250);
+
+        // =========================================================================
+        // SYNCHRONISATION EN DIRECT AVEC LA RÉGIE PROTEC LIVE
+        // =========================================================================
+        function pollRegieConfig() {
+            fetch('get_config.php?_t=' + Date.now(), { cache: 'no-store' })
+                .then(res => res.json())
+                .then(cfg => {
+                    if (cfg && cfg.ets2) {
+                        if (cfg.ets2.visible === false || cfg.ets2.visible === 'false') {
+                            container.style.display = 'none';
+                        } else {
+                            container.style.display = 'block';
+                        }
+                        if (cfg.ets2.layout && cfg.ets2.layout !== currentLayout) {
+                            currentLayout = cfg.ets2.layout;
+                            applyLayout(currentLayout);
+                        }
+                        if (typeof cfg.ets2.demo !== 'undefined') {
+                            isDemoMode = !!cfg.ets2.demo;
+                        }
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Vérifier la régie toutes les 2 secondes
+        setInterval(pollRegieConfig, 2000);
+        pollRegieConfig();
+    </script>
+</body>
+</html>

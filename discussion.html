@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Discussion — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/logo ProtecLive.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@900&family=Orbitron:wght@700&display=swap');
+        
+        body { 
+            margin: 0; 
+            padding: 0; 
+            width: 1920px; 
+            height: 1080px; 
+            background: transparent; 
+            font-family: 'Poppins', sans-serif; 
+            color: white; 
+            overflow: hidden; 
+            position: relative; 
+        }
+        
+        /* Regroupement vertical en haut à gauche pour éviter les collisions */
+        .top-left-hud { 
+            position: absolute; 
+            top: 40px; 
+            left: 40px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-start;
+            gap: 15px; 
+            z-index: 10; 
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), align-items 0.6s;
+        }
+
+        /* Quand le HUD est à droite */
+        .top-left-hud.right-side {
+            transform: translateX(calc(1920px - 100% - 80px));
+            align-items: flex-end;
+        }
+
+        /* Taille du logo adaptée pour ne pas masquer les widgets */
+        .logo-jeu { 
+            width: 100px; 
+            height: auto; 
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); 
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-jeu:hover {
+            transform: scale(1.1);
+        }
+
+        /* --- Panneaux Unifiés (Même largeur 295px) --- */
+        .hud-panel { 
+            background: #04376b; 
+            border-left: 4px solid #f68d20; 
+            border-right: 0px solid transparent;
+            padding: 10px 18px; 
+            border-radius: 0 10px 10px 0; 
+            width: 295px;
+            max-width: 295px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.35); 
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .top-left-hud.right-side .hud-panel {
+            border-left: 0px solid transparent;
+            border-right: 4px solid #f68d20;
+            border-radius: 10px 0 0 10px;
+            text-align: right;
+        }
+
+        .panel-anim-wrap {
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .panel-anim-wrap.fade-out {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        /* En-tête de panneau commun */
+        .panel-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .top-left-hud.right-side .panel-top-row {
+            flex-direction: row-reverse;
+        }
+
+        .panel-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: #f68d20;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .panel-title-wrap i {
+            color: #f68d20;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        /* Indicateurs de rotation (mini-dots) */
+        .panel-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .panel-dots .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            transition: all 0.3s ease;
+        }
+
+        .panel-dots .dot.active {
+            background: #f68d20;
+            box-shadow: 0 0 6px rgba(246, 141, 32, 0.8);
+            transform: scale(1.2);
+        }
+
+        /* Valeur de l'événement récent (Follow / Sub / Don) */
+        .recent-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.3px;
+        }
+
+        /* Badges & progression du panneau Objectif */
+        .goal-badge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .goal-percent-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 900;
+            color: #ffffff;
+            background: rgba(246, 141, 32, 0.25);
+            border: 1px solid rgba(246, 141, 32, 0.5);
+            padding: 1px 6px;
+            border-radius: 10px;
+        }
+
+        .goal-bar-wrap {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            margin: 6px 0 5px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .goal-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ea580c, #f68d20);
+            border-radius: 4px;
+            transition: width 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 0 8px rgba(246, 141, 32, 0.6);
+        }
+
+        .goal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+            font-weight: 900;
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .top-left-hud.right-side .goal-footer {
+            flex-direction: row-reverse;
+        }
+
+        .goal-footer .goal-current-text {
+            font-size: 15px;
+            font-weight: 900;
+            color: #ffffff;
+        }
+
+        .goal-footer .goal-target-text {
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .goal-footer .goal-target-text strong {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        /* Ticker défilant en bas avec effet Premium */
+        .ticker {
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: #024589;
+            backdrop-filter: blur(10px);
+            color: white;
+            border-top: 2px solid #f68d20;
+            border-bottom: 2px solid #f68d20;
+            border-left: none;
+            border-right: none;
+            border-radius: 0px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(60px);
+            transition: transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 1s ease-out, box-shadow 1.2s ease-out;
+            z-index: 20;
+        }
+
+        /* Classe active ajoutée en JS */
+        .ticker.active {
+            transform: translateY(0);
+            opacity: 1;
+            box-shadow: 0 -10px 30px rgba(255, 140, 0, 0.3); /* Lueur d'ambiance */
+        }
+
+        /* Effet de balayage lumineux sur le fond */
+        .ticker::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-30deg);
+            z-index: 1;
+        }
+
+        .ticker.active::before {
+            animation: tickerGlint 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            animation-delay: 0.8s; /* Le balayage commence quand le bandeau est en place */
+        }
+
+        @keyframes tickerGlint {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+        
+        .ticker-move { 
+            position: relative;
+            z-index: 2; /* Au-dessus de la brillance */
+            white-space: nowrap; 
+            font-size: 16px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center;
+            transform: translateX(1920px); /* Position hors écran à droite */
+        }
+        
+        .ticker-unit { 
+            margin-right: 60px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        
+        .ticker-unit i { 
+            color: #f68d20; 
+        }
+
+        @keyframes move { 
+            from { transform: translateX(1920px); } 
+            to { transform: translateX(-100%); } 
+        }
+
+        /* Tchat en direct — Style moderne Protec Live */
+        .chat-container-jeu {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 400px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 10px;
+            z-index: 10;
+            overflow: hidden;
+            pointer-events: none;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 100%);
+            transition: left 0.6s cubic-bezier(0.25, 1, 0.5, 1), right 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Si le HUD principal est basculé à droite, le tchat glisse à gauche */
+        .top-left-hud.right-side ~ .chat-container-jeu,
+        .chat-container-jeu.left-side {
+            right: auto;
+            left: 40px;
+        }
+
+        /* Carte de message de chat */
+        .chat-message-jeu {
+            align-self: flex-end;
+            width: 100%;
+            box-sizing: border-box;
+            background: linear-gradient(135deg, rgba(4, 55, 107, 0.88) 0%, rgba(2, 69, 137, 0.92) 100%);
+            padding: 10px 14px;
+            border-radius: 4px 14px 14px 4px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 4px solid #f68d20;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            opacity: 0;
+            transform: translateX(25px);
+            animation: chatSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            word-wrap: break-word;
+            text-align: left;
+            position: relative;
+        }
+
+        .top-left-hud.right-side ~ .chat-container-jeu .chat-message-jeu,
+        .chat-container-jeu.left-side .chat-message-jeu {
+            align-self: flex-start;
+            border-left: none;
+            border-right: 4px solid #f68d20;
+            border-radius: 14px 4px 4px 14px;
+            transform: translateX(-25px);
+            animation: chatSlideInLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes chatSlideIn {
+            0% { opacity: 0; transform: translateX(25px) scale(0.96); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        @keyframes chatSlideInLeft {
+            0% { opacity: 0; transform: translateX(-25px) scale(0.96); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        /* Rôles spéciaux */
+        .chat-message-jeu.is-broadcaster {
+            border-left-color: #f68d20;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 14px rgba(246, 141, 32, 0.35);
+        }
+
+        .chat-message-jeu.is-moderator {
+            border-left-color: #10b981;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 12px rgba(16, 185, 129, 0.25);
+        }
+
+        .chat-message-jeu.is-vip {
+            border-left-color: #ec4899;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 12px rgba(236, 72, 153, 0.25);
+        }
+
+        .chat-message-jeu.is-subscriber {
+            border-left-color: #3b82f6;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45), 0 0 10px rgba(59, 130, 246, 0.25);
+        }
+
+        .top-left-hud.right-side ~ .chat-container-jeu .chat-message-jeu.is-broadcaster,
+        .chat-container-jeu.left-side .chat-message-jeu.is-broadcaster { border-right-color: #f68d20; }
+        .top-left-hud.right-side ~ .chat-container-jeu .chat-message-jeu.is-moderator,
+        .chat-container-jeu.left-side .chat-message-jeu.is-moderator { border-right-color: #10b981; }
+        .top-left-hud.right-side ~ .chat-container-jeu .chat-message-jeu.is-vip,
+        .chat-container-jeu.left-side .chat-message-jeu.is-vip { border-right-color: #ec4899; }
+        .top-left-hud.right-side ~ .chat-container-jeu .chat-message-jeu.is-subscriber,
+        .chat-container-jeu.left-side .chat-message-jeu.is-subscriber { border-right-color: #3b82f6; }
+
+        .chat-header-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .chat-badges {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chat-username {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .chat-text {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.45;
+            color: #f8fafc;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        }
+        
+        /* Badges Twitch de Tchat aux finitions soignées */
+        .twitch-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+            flex-shrink: 0;
+        }
+        .badge-broadcaster {
+            background: linear-gradient(135deg, #f68d20 0%, #dc2626 100%);
+            color: #ffffff;
+        }
+        .badge-moderator {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            color: #ffffff;
+        }
+        .badge-vip {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            color: #ffffff;
+        }
+        .badge-subscriber {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #ffffff;
+        }
+        .badge-founder {
+            background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+            color: #ffffff;
+        }
+        .badge-prime {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: #ffffff;
+        }
+        .badge-artist {
+            background: linear-gradient(135deg, #a855f7 0%, #6b21a8 100%);
+            color: #ffffff;
+        }
+        .badge-host {
+            background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+            color: #ffffff;
+        }
+        .badge-partner {
+            background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+            color: #ffffff;
+        }
+        .badge-staff {
+            background: linear-gradient(135deg, #64748b 0%, #334155 100%);
+            color: #ffffff;
+        }
+        .twitch-badge i {
+            font-size: 10px;
+            line-height: 1;
+        }
+        
+        .emote {
+            display: inline-block;
+            height: 1.4em;
+            margin: -2px 2px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-left-hud">
+        <img src="images/logo_png.png" class="logo-jeu">
+        
+        <!-- Panneau 1 : Dernier Événement en Rotation (Follower / Sub / Don) -->
+        <div class="hud-panel recent-panel" id="hudRecentEventWidget">
+            <div class="panel-anim-wrap" id="recentAnimWrap">
+                <div class="panel-top-row">
+                    <div class="panel-title-wrap">
+                        <i class="fa-solid fa-heart" id="recentIcon"></i>
+                        <span id="recentLabel">Dernier Follow</span>
+                    </div>
+                    <div class="panel-dots" id="recentDots">
+                        <span class="dot active" title="Dernier Follow"></span>
+                        <span class="dot" title="Dernier Sub"></span>
+                        <span class="dot" title="Cagnotte Dons"></span>
+                    </div>
+                </div>
+                <div class="recent-value" id="recentValue">--</div>
+            </div>
+            <!-- Éléments masqués conservés pour la compatibilité twitch.js & tmi.js -->
+            <span id="lastFollow" style="display: none;">--</span>
+            <span id="valSub" style="display: none;">--</span>
+            <span id="valCharity" style="display: none;">5,00 €</span>
+        </div>
+
+        <!-- Panneau 2 : Objectifs Live en Rotation (Même largeur) -->
+        <div class="hud-panel goal-panel" id="hudGoalWidget" style="display: none;">
+            <div class="panel-anim-wrap" id="goalAnimWrap">
+                <div class="panel-top-row">
+                    <div class="panel-title-wrap">
+                        <i class="fa-solid fa-hand-holding-heart" id="hudGoalIcon"></i>
+                        <span id="hudGoalTitle">Objectif Cagnotte</span>
+                    </div>
+                    <div class="goal-badge-wrap">
+                        <span class="goal-percent-badge" id="hudGoalPercent">0%</span>
+                        <div class="panel-dots" id="goalDots">
+                            <span class="dot active" title="Dons"></span>
+                            <span class="dot" title="Followers"></span>
+                            <span class="dot" title="Subs"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="goal-bar-wrap">
+                    <div class="goal-bar-fill" id="hudGoalFill" style="width: 0%;"></div>
+                </div>
+                <div class="goal-footer">
+                    <span class="goal-current-text" id="hudGoalCurrent">0 €</span>
+                    <span class="goal-target-text">Cible : <strong id="hudGoalTarget">500 €</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur pour le Tchat sur la scène Jeu -->
+    <div class="chat-container-jeu"></div>
+
+    <div class="ticker">
+        <div class="ticker-move" id="tickerMoveContainer">
+            <!-- Rempli dynamiquement -->
+        </div>
+    </div>
+
+    <!-- Configuration globale -->
+    <script src="get_config.php?format=js"></script>
+    <script src="config/config.js"></script>
+    <!-- tmi.js CDN pour la connexion Twitch -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tmi.js/1.8.5/tmi.min.js"></script>
+    <script src="js/twitch.js"></script>
+    <script>
+        let tickerTimeoutId = null;
+        let currentTickerIndex = 0;
+        let isTickerRunning = false;
+        let tickerHideTimeoutId = null;
+
+        function getActiveTickers() {
+            if (typeof CONFIG === 'undefined' || !CONFIG.ticker || CONFIG.ticker.enabled === false || !CONFIG.ticker.list) {
+                return [];
+            }
+            return CONFIG.ticker.list.filter(t => t.enabled !== false);
+        }
+
+        function updateTickerContent(tickersArray) {
+            const container = document.getElementById('tickerMoveContainer');
+            let htmlStr = '';
+            
+            tickersArray.forEach(tickerObj => {
+                if (tickerObj.mode === 'special') {
+                    htmlStr += `
+                        <span class="ticker-unit" style="color: white; font-size: 1.1em; text-transform: uppercase;">
+                            <i class="fa-solid fa-bullhorn"></i> ${tickerObj.message || ''}
+                        </span>
+                    `;
+                } else {
+                    htmlStr += `
+                        <span class="ticker-unit"><i class="fa-solid fa-star"></i> PROTEC LIVE : Bienvenue sur le stream !</span>
+                        <span class="ticker-unit"><i class="fab fa-tiktok"></i> @${CONFIG?.socials?.tiktok || 'proteclive'}</span>
+                        <span class="ticker-unit"><i class="fab fa-instagram"></i> ${CONFIG?.socials?.instagram || 'protec_live'}</span>
+                        <span class="ticker-unit"><i class="fab fa-facebook"></i> ${CONFIG?.socials?.facebook || 'Protec Live'}</span>
+                        <span class="ticker-unit"><i class="fa-solid fa-globe"></i> ${CONFIG?.socials?.website || 'protec-live.org'}</span>
+                        <span class="ticker-unit"><i class="fa-solid fa-hand-holding-heart" style="color: #10b981;"></i> CAGNOTTE DONS : <strong style="color: #10b981;">${CONFIG?.charityData?.amount_formatted || '5,00 €'}</strong> récoltés sur streamlabscharity.com/protection-civile</span>
+                        <span class="ticker-unit"><i class="fa-solid fa-heart"></i> Merci de votre soutien !</span>
+                    `;
+                }
+            });
+            container.innerHTML = htmlStr;
+        }
+
+        function runTickerCycle(forcedIndex = -1) {
+            if (tickerTimeoutId) clearTimeout(tickerTimeoutId);
+            if (tickerHideTimeoutId) clearTimeout(tickerHideTimeoutId);
+            const activeTickers = getActiveTickers();
+            
+            if (activeTickers.length === 0 && forcedIndex === -1) {
+                isTickerRunning = false;
+                // Try again later
+                tickerTimeoutId = setTimeout(() => runTickerCycle(), 5000);
+                return;
+            }
+            
+            isTickerRunning = true;
+            
+            let tickersToPlay = [];
+            if (forcedIndex >= 0 && CONFIG.ticker && CONFIG.ticker.list && CONFIG.ticker.list[forcedIndex]) {
+                tickersToPlay = [CONFIG.ticker.list[forcedIndex]];
+            } else {
+                tickersToPlay = activeTickers;
+            }
+            
+            updateTickerContent(tickersToPlay);
+            
+            const ticker = document.querySelector('.ticker');
+            const tickerMove = document.querySelector('.ticker-move');
+            
+            // Utiliser l'intervalle du premier ticker ou une valeur par défaut
+            const firstTicker = tickersToPlay[0];
+            const intervalMs = firstTicker ? (parseInt(firstTicker.interval) || 5) * 60 * 1000 : 300000;
+            
+            // 1. Apparition
+            ticker.classList.add('active');
+            ticker.style.transform = ''; 
+            
+            // Calculer dynamiquement la durée en fonction de la largeur du texte (après son insertion)
+            requestAnimationFrame(() => {
+                const speedPixelsPerSecond = 180; // Vitesse de défilement (ajustable)
+                const totalDistance = 1920 + tickerMove.scrollWidth;
+                const dynamicDurationMs = (totalDistance / speedPixelsPerSecond) * 1000;
+                
+                // 2. Relancer l'animation
+                tickerMove.style.animation = 'none';
+                void tickerMove.offsetWidth; 
+                tickerMove.style.animation = 'move ' + (dynamicDurationMs/1000) + 's linear forwards';
+                
+                // 3. Disparition
+                tickerHideTimeoutId = setTimeout(() => {
+                    ticker.classList.remove('active');
+                    
+                    // Préparer le prochain cycle global (qui rejouera tous les messages actifs)
+                    tickerTimeoutId = setTimeout(() => {
+                        runTickerCycle();
+                    }, intervalMs);
+                }, dynamicDurationMs + 1000); // Marge d'une seconde pour s'assurer qu'il est hors écran
+            });
+        }
+
+        let lastTickerTriggerTimestamp = -1; // -1 pour l'initialisation
+        let tickerInitialized = false;
+
+        function setupTickerTiming() {
+            // Au premier appel, initialiser avec la valeur existante sans la déclencher
+            if (lastTickerTriggerTimestamp === -1) {
+                if (typeof CONFIG !== 'undefined' && CONFIG.ticker && CONFIG.ticker.manualTrigger) {
+                    lastTickerTriggerTimestamp = CONFIG.ticker.manualTrigger.timestamp;
+                } else {
+                    lastTickerTriggerTimestamp = null;
+                }
+            }
+            
+            // Vérifier trigger manuel (nouveau test depuis la régie)
+            if (typeof CONFIG !== 'undefined' && CONFIG.ticker && CONFIG.ticker.manualTrigger) {
+                if (CONFIG.ticker.manualTrigger.timestamp && CONFIG.ticker.manualTrigger.timestamp !== lastTickerTriggerTimestamp) {
+                    lastTickerTriggerTimestamp = CONFIG.ticker.manualTrigger.timestamp;
+                    runTickerCycle(CONFIG.ticker.manualTrigger.tickerIndex);
+                    return;
+                }
+            }
+            
+            // Si le ticker n'est pas encore initialisé, on lance le premier cycle
+            if (!tickerInitialized) {
+                tickerInitialized = true;
+                runTickerCycle();
+            }
+        }
+
+        // On lance le premier cycle après le chargement
+        setTimeout(() => {
+            setupTickerTiming();
+        }, 3000);
+
+        // --- Interaction avec le logo ---
+        // Gestion du clic sur le logo pour changer de côté (Sauvegardé en mémoire)
+        const logo = document.querySelector('.logo-jeu');
+        const hud = document.querySelector('.top-left-hud');
+        const chat = document.querySelector('.chat-container-jeu');
+        
+        if (localStorage.getItem('hudSide') === 'right') {
+            hud.classList.add('right-side');
+            if (chat) chat.classList.add('left-side');
+        }
+
+        logo.addEventListener('click', () => {
+            hud.classList.toggle('right-side');
+            if (hud.classList.contains('right-side')) {
+                localStorage.setItem('hudSide', 'right');
+                if (chat) chat.classList.add('left-side');
+            } else {
+                localStorage.setItem('hudSide', 'left');
+                if (chat) chat.classList.remove('left-side');
+            }
+        });
+
+        // =========================================================================
+        // PANNEAU 1 : CYCLE AUTOMATIQUE DES DERNIERS ÉVÉNEMENTS (FOLLOW / SUB / DON)
+        // =========================================================================
+        let currentRecentIndex = 0; // 0: Follower, 1: Sub, 2: Don / Cagnotte
+        const recentTypes = ['follow', 'sub', 'donation'];
+
+        function updateRecentWidgetUI(anim = false) {
+            const wrap = document.getElementById('recentAnimWrap');
+            const iconEl = document.getElementById('recentIcon');
+            const labelEl = document.getElementById('recentLabel');
+            const valEl = document.getElementById('recentValue');
+            const dots = document.querySelectorAll('#recentDots .dot');
+            if (!valEl) return;
+
+            // Récupérer les données à jour
+            const lastFollow = (window.AppData && window.AppData.lastFollow && window.AppData.lastFollow !== '--')
+                ? window.AppData.lastFollow
+                : (CONFIG.twitchData && CONFIG.twitchData.latest_follower ? CONFIG.twitchData.latest_follower : '--');
+
+            const lastSub = (window.AppData && window.AppData.lastSub && window.AppData.lastSub !== '--')
+                ? window.AppData.lastSub
+                : '--';
+
+            let donationVal = '5,00 €';
+            if (CONFIG.charityData && CONFIG.charityData.amount_formatted) {
+                donationVal = CONFIG.charityData.amount_formatted;
+            } else if (CONFIG.charityData && typeof CONFIG.charityData.amount_raised !== 'undefined') {
+                donationVal = parseFloat(CONFIG.charityData.amount_raised).toLocaleString('fr-FR') + ' €';
+            }
+
+            let iconClass = 'fa-solid fa-heart';
+            let labelText = 'Dernier Follow';
+            let valText = lastFollow;
+
+            if (currentRecentIndex === 0) {
+                iconClass = 'fa-solid fa-heart';
+                labelText = 'Dernier Follow';
+                valText = lastFollow;
+            } else if (currentRecentIndex === 1) {
+                iconClass = 'fa-solid fa-star';
+                labelText = 'Dernier Sub';
+                valText = lastSub;
+            } else {
+                iconClass = 'fa-solid fa-hand-holding-heart';
+                labelText = 'Cagnotte Dons';
+                valText = donationVal;
+            }
+
+            const applyData = () => {
+                if (iconEl) iconEl.className = iconClass;
+                if (labelEl) labelEl.textContent = labelText;
+                if (valEl) valEl.textContent = valText;
+                dots.forEach((dot, idx) => {
+                    dot.classList.toggle('active', idx === currentRecentIndex);
+                });
+            };
+
+            if (anim && wrap) {
+                wrap.classList.add('fade-out');
+                setTimeout(() => {
+                    applyData();
+                    wrap.classList.remove('fade-out');
+                }, 350);
+            } else {
+                applyData();
+            }
+        }
+
+        // Cycle automatique du Panneau 1 toutes les 5.5 secondes
+        setInterval(() => {
+            currentRecentIndex = (currentRecentIndex + 1) % recentTypes.length;
+            updateRecentWidgetUI(true);
+        }, 5500);
+
+        // =========================================================================
+        // PANNEAU 2 : CYCLE AUTOMATIQUE DES OBJECTIFS (DONS / FOLLOWERS / SUBS)
+        // =========================================================================
+        let currentGoalIndex = 0; // 0: Donations, 1: Followers, 2: Subs
+        const goalCycleTypes = ['donations', 'followers', 'subs'];
+
+        function updateGoalHUD(anim = false) {
+            const widget = document.getElementById('hudGoalWidget');
+            const wrap = document.getElementById('goalAnimWrap');
+            if (!widget) return;
+
+            if (typeof CONFIG === 'undefined' || !CONFIG.goals) {
+                widget.style.display = 'none';
+                return;
+            }
+            const isVisible = CONFIG.goals.visible !== false && CONFIG.goals.visible !== 'false' && CONFIG.goals.visible !== 0 && CONFIG.goals.visible !== '0';
+            if (!isVisible || CONFIG.goals.activeType === 'none') {
+                widget.style.display = 'none';
+                return;
+            }
+
+            widget.style.display = 'block';
+
+            // Type d'objectif : rotation automatique (par défaut) ou spécifique
+            const isRotating = (!CONFIG.goals.activeType || CONFIG.goals.activeType === 'rotation');
+            let activeType = isRotating ? goalCycleTypes[currentGoalIndex] : CONFIG.goals.activeType;
+
+            const iconEl = document.getElementById('hudGoalIcon');
+            const titleEl = document.getElementById('hudGoalTitle');
+            const percentEl = document.getElementById('hudGoalPercent');
+            const fillEl = document.getElementById('hudGoalFill');
+            const currentEl = document.getElementById('hudGoalCurrent');
+            const targetEl = document.getElementById('hudGoalTarget');
+            const dots = document.querySelectorAll('#goalDots .dot');
+
+            let current = 0;
+            let target = 1;
+            let currentStr = '0';
+            let targetStr = '0';
+            let title = '';
+            let iconClass = 'fa-solid fa-bullseye';
+            let activeDotIndex = isRotating ? currentGoalIndex : 0;
+
+            if (activeType === 'donations') {
+                activeDotIndex = 0;
+                iconClass = 'fa-solid fa-hand-holding-heart';
+                const donCfg = CONFIG.goals.donations || {};
+                title = donCfg.title || "Achat de matériel de secours";
+                target = Math.max(1, parseInt(donCfg.target, 10) || 500);
+                current = (CONFIG.charityData && typeof CONFIG.charityData.amount_raised !== 'undefined') ? parseFloat(CONFIG.charityData.amount_raised) : 0;
+                currentStr = (CONFIG.charityData && CONFIG.charityData.amount_formatted) ? CONFIG.charityData.amount_formatted : (current.toLocaleString('fr-FR') + ' €');
+                targetStr = target.toLocaleString('fr-FR') + ' €';
+            } else if (activeType === 'followers') {
+                activeDotIndex = 1;
+                iconClass = 'fa-solid fa-heart';
+                const folCfg = CONFIG.goals.followers || {};
+                title = folCfg.title || "Objectif Followers";
+                target = Math.max(1, parseInt(folCfg.target, 10) || 200);
+                current = (CONFIG.twitchData && typeof CONFIG.twitchData.follower_count !== 'undefined') ? parseInt(CONFIG.twitchData.follower_count, 10) : 0;
+                currentStr = current.toLocaleString('fr-FR');
+                targetStr = target.toLocaleString('fr-FR');
+            } else if (activeType === 'subs') {
+                activeDotIndex = 2;
+                iconClass = 'fa-solid fa-star';
+                const subCfg = CONFIG.goals.subs || {};
+                title = subCfg.title || "Objectif Subs";
+                target = Math.max(1, parseInt(subCfg.target, 10) || 50);
+                current = (window.AppData && typeof window.AppData.dailySubs !== 'undefined') ? window.AppData.dailySubs : 0;
+                currentStr = current.toLocaleString('fr-FR');
+                targetStr = target.toLocaleString('fr-FR');
+            }
+
+            const percent = Math.min(Math.round((current / target) * 100), 100);
+
+            const applyGoalData = () => {
+                if (iconEl) iconEl.className = iconClass;
+                if (titleEl) titleEl.textContent = title;
+                if (percentEl) percentEl.textContent = percent + '%';
+                if (fillEl) fillEl.style.width = percent + '%';
+                if (currentEl) currentEl.textContent = currentStr;
+                if (targetEl) targetEl.textContent = targetStr;
+                dots.forEach((dot, idx) => {
+                    dot.style.display = isRotating ? 'inline-block' : 'none';
+                    dot.classList.toggle('active', idx === activeDotIndex);
+                });
+            };
+
+            if (anim && wrap) {
+                wrap.classList.add('fade-out');
+                setTimeout(() => {
+                    applyGoalData();
+                    wrap.classList.remove('fade-out');
+                }, 350);
+            } else {
+                applyGoalData();
+            }
+        }
+
+        // Cycle automatique du Panneau 2 toutes les 7.5 secondes
+        setInterval(() => {
+            if (!CONFIG.goals || !CONFIG.goals.activeType || CONFIG.goals.activeType === 'rotation') {
+                currentGoalIndex = (currentGoalIndex + 1) % goalCycleTypes.length;
+                updateGoalHUD(true);
+            }
+        }, 7500);
+
+        // Mise à jour dynamique du chat depuis la régie sans recharger la page
+        function updateHUD() {
+            const chatContainer = document.querySelector('.chat-container-jeu');
+            if (chatContainer) {
+                if (typeof CONFIG !== 'undefined' && CONFIG.gameChatVisible === false) {
+                    chatContainer.style.display = 'none';
+                } else {
+                    chatContainer.style.display = 'flex';
+                }
+            }
+            
+            // Mise à jour des timings du ticker si changés en direct
+            setupTickerTiming();
+
+            // Mise à jour immédiate des 2 panneaux (sans transition brusque)
+            updateRecentWidgetUI(false);
+            updateGoalHUD(false);
+        }
+
+        // Exécuter l'affichage initial
+        updateHUD();
+
+        function getAccessibleColor(hexColor) {
+            if (!hexColor || hexColor === '#000000') return '#f68d20';
+            
+            let r = 0, g = 0, b = 0;
+            if (hexColor.startsWith('#')) {
+                if (hexColor.length === 4) {
+                    r = parseInt(hexColor[1] + hexColor[1], 16);
+                    g = parseInt(hexColor[2] + hexColor[2], 16);
+                    b = parseInt(hexColor[3] + hexColor[3], 16);
+                } else if (hexColor.length === 7) {
+                    r = parseInt(hexColor.substring(1, 3), 16);
+                    g = parseInt(hexColor.substring(3, 5), 16);
+                    b = parseInt(hexColor.substring(5, 7), 16);
+                }
+            }
+            
+            // Luminance relative (WCAG)
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            
+            // Si la couleur est trop sombre (luminance < 0.6), on la mélange 50/50 avec du blanc
+            if (luminance < 0.6) {
+                r = Math.round((r + 255) / 2);
+                g = Math.round((g + 255) / 2);
+                b = Math.round((b + 255) / 2);
+                
+                const toHex = (c) => {
+                    const hex = c.toString(16);
+                    return hex.length === 1 ? '0' + hex : hex;
+                };
+                return '#' + toHex(r) + toHex(g) + toHex(b);
+            }
+            return hexColor;
+        }
+
+        function getBadgeHtml(badgesTag) {
+            if (!badgesTag) return '';
+            let badgesHtml = '';
+
+            const badgeList = badgesTag.split(',');
+            badgeList.forEach(badge => {
+                const parts = badge.split('/');
+                const name = parts[0].trim().toLowerCase();
+                const version = parts[1] || '1';
+
+                switch (name) {
+                    case 'broadcaster':
+                        badgesHtml += '<span class="twitch-badge badge-broadcaster" title="Diffuseur (Modérateur Principal)"><i class="fa-solid fa-crown"></i></span>';
+                        break;
+                    case 'moderator':
+                        badgesHtml += '<span class="twitch-badge badge-moderator" title="Modérateur"><i class="fa-solid fa-shield-halved"></i></span>';
+                        break;
+                    case 'vip':
+                        badgesHtml += '<span class="twitch-badge badge-vip" title="VIP"><i class="fa-solid fa-gem"></i></span>';
+                        break;
+                    case 'subscriber': {
+                        const subMonths = parseInt(version, 10);
+                        const subTitle = subMonths > 1 ? `Abonné (${subMonths} mois)` : 'Abonné';
+                        badgesHtml += `<span class="twitch-badge badge-subscriber" title="${subTitle}"><i class="fa-solid fa-star"></i></span>`;
+                        break;
+                    }
+                    case 'founder': {
+                        const founderMonths = parseInt(version, 10);
+                        const founderTitle = founderMonths > 1 ? `Fondateur (${founderMonths} mois)` : 'Fondateur';
+                        badgesHtml += `<span class="twitch-badge badge-founder" title="${founderTitle}"><i class="fa-solid fa-medal"></i></span>`;
+                        break;
+                    }
+                    case 'prime':
+                    case 'premium':
+                        badgesHtml += '<span class="twitch-badge badge-prime" title="Prime Gaming"><i class="fa-solid fa-bolt"></i></span>';
+                        break;
+                    case 'turbo':
+                        badgesHtml += '<span class="twitch-badge badge-prime" title="Twitch Turbo"><i class="fa-solid fa-bolt"></i></span>';
+                        break;
+                    case 'artist':
+                    case 'artist-badge':
+                        badgesHtml += '<span class="twitch-badge badge-artist" title="Artiste de la chaîne"><i class="fa-solid fa-palette"></i></span>';
+                        break;
+                    case 'host':
+                    case 'lead':
+                        badgesHtml += '<span class="twitch-badge badge-host" title="Hôte"><i class="fa-solid fa-microphone-lines"></i></span>';
+                        break;
+                    case 'partner':
+                    case 'verified':
+                        badgesHtml += '<span class="twitch-badge badge-partner" title="Partenaire Vérifié"><i class="fa-solid fa-circle-check"></i></span>';
+                        break;
+                    case 'staff':
+                    case 'admin':
+                    case 'global_mod':
+                        badgesHtml += '<span class="twitch-badge badge-staff" title="Staff Twitch"><i class="fa-solid fa-wrench"></i></span>';
+                        break;
+                }
+            });
+
+            return badgesHtml;
+        }
+
+        function displayTwitchMessage(name, content, color, msgId, badgesTag) {
+            const chatContainer = document.querySelector('.chat-container-jeu');
+            if (!chatContainer) return;
+
+            const msgLine = document.createElement('div');
+            msgLine.className = 'chat-message-jeu';
+            if (msgId) {
+                msgLine.dataset.msgId = msgId;
+            }
+
+            // Détection de rôles spéciaux pour le style de bordure
+            if (badgesTag) {
+                if (badgesTag.includes('broadcaster')) msgLine.classList.add('is-broadcaster');
+                else if (badgesTag.includes('moderator')) msgLine.classList.add('is-moderator');
+                else if (badgesTag.includes('vip')) msgLine.classList.add('is-vip');
+                else if (badgesTag.includes('subscriber') || badgesTag.includes('founder')) msgLine.classList.add('is-subscriber');
+            }
+            
+            const badgesHtml = getBadgeHtml(badgesTag);
+            const accessibleColor = getAccessibleColor(color);
+            
+            msgLine.innerHTML = `
+                <div class="chat-header-line">
+                    ${badgesHtml ? `<span class="chat-badges">${badgesHtml}</span>` : ''}
+                    <span class="chat-username" style="color: ${accessibleColor}">${name}</span>
+                </div>
+                <div class="chat-text">${content}</div>
+            `;
+
+            chatContainer.appendChild(msgLine);
+
+            // Faire disparaître après 25 secondes
+            setTimeout(() => {
+                if (msgLine.parentNode) {
+                    msgLine.style.transition = "opacity 0.5s ease, transform 0.5s cubic-bezier(0.4, 0, 1, 1)";
+                    msgLine.style.opacity = "0";
+                    msgLine.style.transform = "translateX(25px) scale(0.95)";
+                    setTimeout(() => msgLine.remove(), 500);
+                }
+            }, 25000);
+
+            if (chatContainer.children.length > 8) {
+                const first = chatContainer.firstChild;
+                if (first) {
+                    first.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+                    first.style.opacity = "0";
+                    first.style.transform = "translateY(-10px)";
+                    setTimeout(() => first.remove(), 300);
+                }
+            }
+        }
+
+        function handleClearMsg(rawLine) {
+            const chatContainer = document.querySelector('.chat-container-jeu');
+            if (!chatContainer) return;
+            
+            const tags = parseTags(rawLine);
+            const targetId = tags['target-msg-id'];
+            if (targetId) {
+                const el = chatContainer.querySelector(`[data-msg-id="${targetId}"]`);
+                if (el) {
+                    el.style.transition = "all 0.3s ease";
+                    el.style.opacity = "0";
+                    el.style.transform = "scale(0.8) translateX(20px)";
+                    setTimeout(() => el.remove(), 300);
+                }
+            }
+        }
+
+        function handleClearChat(rawLine) {
+            const chatContainer = document.querySelector('.chat-container-jeu');
+            if (!chatContainer) return;
+
+            const parts = rawLine.split(' ');
+            const targetUserPart = parts[parts.length - 1];
+            if (targetUserPart && targetUserPart.startsWith(':')) {
+                const targetUser = targetUserPart.substring(1).trim().toLowerCase();
+                const els = chatContainer.querySelectorAll('.chat-message-jeu');
+                els.forEach(el => {
+                    const usernameEl = el.querySelector('.chat-username');
+                    if (usernameEl) {
+                        const nameText = usernameEl.textContent.trim().toLowerCase();
+                        if (nameText.includes(targetUser)) {
+                            el.style.transition = "all 0.3s ease";
+                            el.style.opacity = "0";
+                            el.style.transform = "scale(0.8) translateX(20px)";
+                            setTimeout(() => el.remove(), 300);
+                        }
+                    }
+                });
+            } else {
+                chatContainer.innerHTML = '';
+            }
+        }
+
+
+    </script>
+</body>
+</html>
+

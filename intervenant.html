@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>HUD Intervenant — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Orbitron:wght@700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Aligné à gauche par défaut */
+        }
+
+        body.right-side {
+            justify-content: flex-end; /* Aligné à droite */
+        }
+
+        /* Conteneur principal */
+        .speaker-hud {
+            display: flex;
+            align-items: center;
+            height: 80px;
+            opacity: 0;
+            transform: translateX(-50px); /* Glisse depuis la gauche par défaut */
+            transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+            user-select: none;
+            cursor: pointer;
+        }
+
+        /* Glisse depuis la droite si configuré à droite */
+        .speaker-hud.right-side {
+            flex-direction: row-reverse;
+            transform: translateX(50px);
+        }
+
+        /* L'état affiché */
+        .speaker-hud.active {
+            opacity: 1;
+            transform: translateX(0) !important;
+        }
+
+        /* L'accent orange à gauche */
+        .speaker-accent {
+            width: 6px;
+            height: 100%;
+            background: #f68d20;
+            box-shadow: 0 0 15px rgba(246, 141, 32, 0.6);
+            border-radius: 4px 0 0 4px;
+            z-index: 3;
+        }
+
+        .speaker-hud.right-side .speaker-accent {
+            border-radius: 0 4px 4px 0; /* Inversion de l'arrondi du badge d'accent */
+        }
+
+        /* La boîte en Glassmorphism */
+        .speaker-box {
+            background: #04376b;
+            backdrop-filter: blur(10px);
+            padding: 12px 30px;
+            border-radius: 0 12px 12px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 2;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .speaker-hud.right-side .speaker-box {
+            border-radius: 12px 0 0 12px; /* Inversion de l'arrondi du conteneur */
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: none;
+            text-align: right;
+        }
+
+        /* Nom de l'intervenant */
+        .speaker-name {
+            font-size: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ffffff;
+        }
+        .speaker-name i {
+            color: #f68d20;
+            background: none;
+            text-shadow: none;
+        }
+
+        .speaker-hud.right-side .speaker-name {
+            flex-direction: row-reverse; /* Inverser l'ordre icône/texte à droite */
+        }
+
+        /* Rôle / Métier */
+        .speaker-role {
+            font-size: 13px;
+            color: #f68d20;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-top: 2px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            white-space: nowrap;
+        }
+
+        /* APC (Département) */
+        .speaker-apc {
+            font-size: 11px;
+            color: #d1d5db;
+            font-family: sans-serif;
+            font-weight: 400;
+            margin-top: 2px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            display: none;
+        }
+
+        /* Indicateur interactif discret */
+        .click-hint {
+            position: absolute;
+            bottom: 2px;
+            right: 10px;
+            font-size: 9px;
+            color: rgba(255,255,255,0.15);
+            font-family: sans-serif;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        body:hover .click-hint {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="speaker-hud" id="speakerHud"> <!-- Pas de active par défaut -->
+        <div class="speaker-accent"></div>
+        <div class="speaker-box">
+            <div class="speaker-name">
+                <i class="fa-solid fa-user" id="speakerIcon" style="color: #f68d20;"></i>
+                <span id="speakerNameText">CHARGEMENT...</span>
+            </div>
+            <div class="speaker-role" id="speakerRole">Veuillez configurer l'intervenant</div>
+            <div class="speaker-apc" id="speakerApc"></div>
+        </div>
+    </div>
+
+    <div class="click-hint">Clic pour masquer/afficher</div>
+
+    <!-- Configuration globale -->
+    <script src="get_config.php?format=js"></script>
+    <script src="config/config.js"></script>
+    <script>
+        // Récupérer l'ID de l'intervenant (1 ou 2) via le paramètre d'URL (?id=1 ou ?id=2)
+        const urlParams = new URLSearchParams(window.location.search);
+        const speakerId = urlParams.get('id') || '1'; // 1 par défaut
+        const speakerKey = `speaker${speakerId}`;
+        const hud = document.getElementById('speakerHud');
+
+        // Mettre à jour l'intervenant en direct
+        function updateHUD() {
+            if (typeof CONFIG !== 'undefined' && CONFIG.speakers && CONFIG.speakers[speakerKey]) {
+                const speakerData = CONFIG.speakers[speakerKey];
+                const nameTextEl = document.getElementById('speakerNameText');
+                const roleEl = document.getElementById('speakerRole');
+                const apcEl = document.getElementById('speakerApc');
+                const iconEl = document.getElementById('speakerIcon');
+                
+                // Nom
+                if (speakerData.name) {
+                    nameTextEl.textContent = speakerData.name;
+                } else {
+                    nameTextEl.textContent = `INTERVENANT ${speakerId}`;
+                }
+                
+                // Rôle
+                if (speakerData.role) {
+                    roleEl.textContent = speakerData.role;
+                    roleEl.style.display = 'block';
+                } else {
+                    roleEl.style.display = 'none';
+                }
+
+                // APC
+                if (speakerData.apc) {
+                    apcEl.textContent = speakerData.apc;
+                    apcEl.style.display = 'block';
+                } else {
+                    apcEl.style.display = 'none';
+                }
+
+                // Icône
+                if (speakerData.icon) {
+                    iconEl.className = `fa-solid ${speakerData.icon}`;
+                }
+
+                // Côté (gauche ou droite)
+                if (speakerData.side === 'right') {
+                    document.body.classList.add('right-side');
+                    hud.classList.add('right-side');
+                } else {
+                    document.body.classList.remove('right-side');
+                    hud.classList.remove('right-side');
+                }
+
+                // Visibilité contrôlée en direct
+                if (speakerData.visible) {
+                    hud.classList.add('active');
+                } else {
+                    hud.classList.remove('active');
+                }
+            }
+        }
+
+        // Chargement initial
+        window.addEventListener('DOMContentLoaded', () => {
+            updateHUD();
+
+            // Déclencher l'animation d'apparition après un court délai si visible = true
+            if (typeof CONFIG !== 'undefined' && CONFIG.speakers && CONFIG.speakers[speakerKey] && CONFIG.speakers[speakerKey].visible) {
+                setTimeout(() => {
+                    hud.classList.add('active');
+                }, 300);
+            }
+        });
+
+        // Toggle d'affichage au clic (pour test interactif dans OBS)
+        document.body.addEventListener('click', () => {
+            const isNowActive = hud.classList.toggle('active');
+            
+            // Mettre à jour le localStorage pour que la régie voie le changement
+            if (typeof CONFIG !== 'undefined' && CONFIG.speakers && CONFIG.speakers[speakerKey]) {
+                CONFIG.speakers[speakerKey].visible = isNowActive;
+                localStorage.setItem('protec_cached_config', JSON.stringify(CONFIG));
+            }
+        });
+    </script>
+</body>
+</html>
+
+

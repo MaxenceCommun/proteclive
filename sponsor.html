@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>HUD Partenaires — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Orbitron:wght@700;900&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1920px;
+            height: 1080px;
+            background: transparent;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Carte de sponsor qui glisse depuis la droite */
+        .sponsor-card {
+            position: absolute;
+            top: 150px;
+            right: 50px;
+            width: 340px;
+            background: linear-gradient(135deg, rgba(4, 55, 107, 0.85) 0%, rgba(2, 69, 137, 0.85) 100%);
+            border: 1px solid rgba(246, 141, 32, 0.3);
+            border-top: 4px solid #f68d20;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            transform: translateX(450px);
+            opacity: 0;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .sponsor-card.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* L'effet de balayage brillant à l'apparition */
+        .sponsor-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 80%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            transform: skewX(-30deg);
+            pointer-events: none;
+        }
+
+        .sponsor-card.active::after {
+            animation: glint 1.8s ease-out forwards;
+            animation-delay: 0.8s;
+        }
+
+        @keyframes glint {
+            0% { left: -150%; }
+            100% { left: 250%; }
+        }
+
+        /* Texte de mention du sponsor */
+        .sponsor-mention {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            color: #f68d20;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 900;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            margin: 0;
+        }
+
+        /* Zone d'affichage du logo */
+        .sponsor-logo-container {
+            width: 100%;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .sponsor-logo {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+        }
+
+        /* Description en dessous du logo */
+        .sponsor-description {
+            font-size: 13px;
+            color: #e5e7eb;
+            font-weight: 700;
+            text-align: center;
+            margin: 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            line-height: 1.4;
+        }
+
+        /* Indication discrète pour le test */
+        .click-hint {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.15);
+            font-family: sans-serif;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        body:hover .click-hint {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sponsor-card" id="sponsorCard">
+        <p class="sponsor-mention" id="sponsorMention">PARTENAIRE</p>
+        <div class="sponsor-logo-container">
+            <img src="images/logo_png.png" class="sponsor-logo" id="sponsorLogo" alt="Logo Partenaire">
+        </div>
+        <p class="sponsor-description" id="sponsorDescription"></p>
+    </div>
+
+    <div class="click-hint">OBS Overlay — Partenaires</div>
+
+    <!-- Configuration globale -->
+    <script src="get_config.php?format=js"></script>
+    <script src="config/config.js"></script>
+
+    <script>
+        let lastManualTrigger = 0;
+        let partnerTimers = {}; // Clé unique -> dernier timestamp affiché
+        let displayQueue = [];
+        let isDisplaying = false;
+
+        function checkTrigger() {
+            if (typeof CONFIG === 'undefined' || !CONFIG.partners) return;
+
+            // 1. Détection du déclenchement manuel (un partenaire précis)
+            const manualTrigger = CONFIG.partners.manualTrigger || null;
+            if (manualTrigger && typeof manualTrigger === 'object' && manualTrigger.timestamp > lastManualTrigger) {
+                lastManualTrigger = manualTrigger.timestamp;
+                
+                const targetIndex = manualTrigger.partnerIndex;
+                if (CONFIG.partners.list && CONFIG.partners.list[targetIndex]) {
+                    const partner = CONFIG.partners.list[targetIndex];
+                    if (partner.enabled !== false) {
+                        // Ajouter en priorité au début de la file d'attente
+                        displayQueue.unshift(partner);
+                        processQueue();
+                    }
+                }
+                return;
+            }
+
+            // 2. Détection du déclenchement automatique basé sur le temps pour chaque partenaire
+            if (CONFIG.partners.enabled && CONFIG.partners.list) {
+                const now = Date.now();
+                const activePartners = CONFIG.partners.list.filter(p => p.enabled !== false);
+                
+                activePartners.forEach((partner) => {
+                    const partnerId = (partner.name || '') + '_' + (partner.logo || '');
+                    
+                    // Initialiser le timer au chargement si pas défini
+                    if (!partnerTimers[partnerId]) {
+                        partnerTimers[partnerId] = now;
+                        return;
+                    }
+
+                    // Calculer l'intervalle propre (défaut: 5 minutes)
+                    const intervalMinutes = parseFloat(partner.interval) || parseFloat(CONFIG.partners.interval) || 5;
+                    const intervalMs = intervalMinutes * 60 * 1000;
+                    
+                    if (now - partnerTimers[partnerId] >= intervalMs) {
+                        partnerTimers[partnerId] = now;
+                        // Ajouter à la file d'attente
+                        displayQueue.push(partner);
+                        processQueue();
+                    }
+                });
+            }
+        }
+
+        function processQueue() {
+            if (isDisplaying || displayQueue.length === 0) return;
+
+            isDisplaying = true;
+            const partner = displayQueue.shift();
+
+            const card = document.getElementById('sponsorCard');
+            const logo = document.getElementById('sponsorLogo');
+            const mention = document.getElementById('sponsorMention');
+            const description = document.getElementById('sponsorDescription');
+
+            // Injecter les données
+            logo.src = partner.logo || 'images/logo_png.png';
+            logo.onerror = function() {
+                this.onerror = null; // Évite la boucle infinie si le fallback échoue
+                this.src = 'images/logo_png.png';
+            };
+            mention.textContent = partner.text || 'PARTENAIRE';
+            description.textContent = partner.description || '';
+
+            // Masquer d'abord au cas où il était actif
+            card.classList.remove('active');
+            
+            // Laisser un léger temps pour appliquer la transition et relancer
+            setTimeout(() => {
+                card.classList.add('active');
+
+                // Calculer la durée d'affichage propre (défaut: 15 secondes)
+                const durationSeconds = parseFloat(partner.duration) || parseFloat(CONFIG.partners.duration) || 15;
+                const durationMs = durationSeconds * 1000;
+                
+                setTimeout(() => {
+                    card.classList.remove('active');
+                    // Attendre la fin de la transition CSS (0.8s) avant de libérer le canal
+                    setTimeout(() => {
+                        isDisplaying = false;
+                        processQueue(); // Afficher le suivant s'il y en a dans la file
+                    }, 1000);
+                }, durationMs);
+            }, 100);
+        }
+
+        // Cette fonction est appelée automatiquement lors des changements sur la régie
+        function updateHUD() {
+            checkTrigger();
+        }
+
+        // Vérification automatique de l'intervalle toutes les secondes
+        setInterval(checkTrigger, 1000);
+    </script>
+</body>
+</html>

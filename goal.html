@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Objectif Live — PROTEC LIVE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/logo ProtecLive.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Orbitron:wght@700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 1920px;
+            height: 1080px;
+            background: transparent;
+            font-family: 'Poppins', sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Conteneur principal positionné (par défaut en bas au centre, ou haut droite selon classe/URL) */
+        .goal-overlay-container {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 1;
+        }
+
+        .goal-overlay-container.top-center {
+            bottom: auto;
+            top: 40px;
+        }
+
+        .goal-overlay-container.top-right {
+            bottom: auto;
+            top: 40px;
+            left: auto;
+            right: 40px;
+            transform: none;
+        }
+
+        .goal-overlay-container.top-left {
+            bottom: auto;
+            top: 40px;
+            left: 40px;
+            transform: none;
+        }
+
+        .goal-overlay-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, 20px);
+        }
+
+        /* Carte widget Glassmorphism */
+        .goal-card {
+            background: rgba(2, 69, 137, 0.92);
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            padding: 16px 28px;
+            min-width: 540px;
+            max-width: 680px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(16, 185, 129, 0.25);
+            backdrop-filter: blur(12px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Lueur de balayage premium */
+        .goal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+            transform: skewX(-25deg);
+            animation: cardGlint 6s infinite ease-in-out;
+        }
+
+        @keyframes cardGlint {
+            0%, 75% { left: -120%; }
+            100% { left: 220%; }
+        }
+
+        /* Thèmes de bordures et lueurs selon le type */
+        /* Thèmes de bordures et lueurs selon le type */
+        .goal-card.type-donations {
+            border-color: #f68d20;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(246, 141, 32, 0.35);
+        }
+
+        .goal-card.type-followers {
+            border-color: #f68d20;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(246, 141, 32, 0.35);
+        }
+
+        .goal-card.type-subs {
+            border-color: #a855f7;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(168, 85, 247, 0.35);
+        }
+
+        /* En-tête : Titre & Icône & Pourcentage */
+        .goal-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .goal-title-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .goal-icon-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: rgba(246, 141, 32, 0.2);
+            color: #f68d20;
+            border: 1px solid rgba(246, 141, 32, 0.45);
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .type-followers .goal-icon-badge {
+            background: rgba(246, 141, 32, 0.2);
+            color: #f68d20;
+            border-color: rgba(246, 141, 32, 0.45);
+        }
+
+        .type-subs .goal-icon-badge {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+            border-color: rgba(168, 85, 247, 0.45);
+        }
+
+        .goal-title-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #f68d20;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
+            line-height: 1.35;
+            flex: 1;
+        }
+
+        .goal-badge-percent {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            color: #ffffff;
+            background: rgba(246, 141, 32, 0.22);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(246, 141, 32, 0.45);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Jauge de progression */
+        .goal-track {
+            width: 100%;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 9px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
+            margin-bottom: 10px;
+            z-index: 2;
+        }
+
+        .goal-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 9px;
+            background: linear-gradient(90deg, #ea580c, #f68d20);
+            box-shadow: 0 0 16px rgba(246, 141, 32, 0.8);
+            transition: width 1s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+        }
+
+        .type-followers .goal-fill {
+            background: linear-gradient(90deg, #ea580c, #f68d20);
+            box-shadow: 0 0 16px rgba(246, 141, 32, 0.8);
+        }
+
+        .type-subs .goal-fill {
+            background: linear-gradient(90deg, #7c3aed, #a855f7);
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.8);
+        }
+
+        /* Rayures dynamiques animées dans la jauge */
+        .goal-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(
+                -45deg,
+                rgba(255, 255, 255, 0.15) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0.15) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 24px 24px;
+            animation: stripesMove 1.5s linear infinite;
+        }
+
+        @keyframes stripesMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 24px 0; }
+        }
+
+        /* Pied : Valeur récoltée vs Cible */
+        .goal-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 15px;
+            font-weight: 700;
+            position: relative;
+            z-index: 2;
+        }
+
+        .goal-current-val {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            font-size: 18px;
+            color: #ffffff;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .type-donations .goal-current-val { color: #ffffff; }
+        .type-followers .goal-current-val { color: #ffffff; }
+        .type-subs .goal-current-val { color: #ffffff; }
+
+        .goal-target-val {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .goal-target-val strong {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="goal-overlay-container" id="goalContainer">
+        <div class="goal-card type-donations" id="goalCard">
+            <!-- En-tête -->
+            <div class="goal-head">
+                <div class="goal-title-box">
+                    <div class="goal-icon-badge" id="goalIconWrap">
+                        <i class="fa-solid fa-hand-holding-heart" id="goalIcon"></i>
+                    </div>
+                    <span class="goal-title-text" id="goalTitle">Achat de matériel de secours</span>
+                </div>
+                <div class="goal-badge-percent" id="goalPercent">0%</div>
+            </div>
+
+            <!-- Jauge -->
+            <div class="goal-track">
+                <div class="goal-fill" id="goalFill" style="width: 0%;"></div>
+            </div>
+
+            <!-- Pied de carte -->
+            <div class="goal-foot">
+                <div class="goal-current-val" id="goalCurrent">0 €</div>
+                <div class="goal-target-val">
+                    Objectif : <strong id="goalTarget">500 €</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration globale & WebSockets Twitch -->
+    <script src="get_config.php?format=js"></script>
+    <script src="config/config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tmi.js/1.8.5/tmi.min.js"></script>
+    <script src="js/twitch.js"></script>
+
+    <script>
+        // Support du positionnement via URL (?pos=top-center, ?pos=top-right, etc.)
+        const urlParams = new URLSearchParams(window.location.search);
+        const posParam = urlParams.get('pos');
+        const container = document.getElementById('goalContainer');
+        if (posParam && container) {
+            container.classList.add(posParam);
+        }
+
+        function updateGoalOverlay() {
+            const card = document.getElementById('goalCard');
+            const cont = document.getElementById('goalContainer');
+            if (!card || !cont) return;
+
+            // Masquer si désactivé ou type 'none'
+            if (typeof CONFIG === 'undefined' || !CONFIG.goals) {
+                cont.classList.add('hidden');
+                return;
+            }
+            const isVisible = CONFIG.goals.visible !== false && CONFIG.goals.visible !== 'false' && CONFIG.goals.visible !== 0 && CONFIG.goals.visible !== '0';
+            if (!isVisible || CONFIG.goals.activeType === 'none') {
+                cont.classList.add('hidden');
+                return;
+            }
+
+            cont.classList.remove('hidden');
+
+            const activeType = CONFIG.goals.activeType || 'donations';
+            card.classList.remove('type-donations', 'type-followers', 'type-subs');
+            card.classList.add(`type-${activeType}`);
+
+            const iconEl = document.getElementById('goalIcon');
+            const titleEl = document.getElementById('goalTitle');
+            const percentEl = document.getElementById('goalPercent');
+            const fillEl = document.getElementById('goalFill');
+            const currentEl = document.getElementById('goalCurrent');
+            const targetEl = document.getElementById('goalTarget');
+
+            let current = 0;
+            let target = 1;
+            let currentStr = '0';
+            let targetStr = '0';
+            let title = '';
+            let iconClass = 'fa-solid fa-bullseye';
+
+            if (activeType === 'donations') {
+                iconClass = 'fa-solid fa-hand-holding-heart';
+                const donCfg = CONFIG.goals.donations || {};
+                title = donCfg.title || "Achat de matériel de secours";
+                target = Math.max(1, parseInt(donCfg.target, 10) || 500);
+                current = (CONFIG.charityData && typeof CONFIG.charityData.amount_raised !== 'undefined') ? parseFloat(CONFIG.charityData.amount_raised) : 0;
+                currentStr = (CONFIG.charityData && CONFIG.charityData.amount_formatted) ? CONFIG.charityData.amount_formatted : (current.toLocaleString('fr-FR') + ' €');
+                targetStr = target.toLocaleString('fr-FR') + ' €';
+            } else if (activeType === 'followers') {
+                iconClass = 'fa-solid fa-heart';
+                const folCfg = CONFIG.goals.followers || {};
+                title = folCfg.title || "Objectif Followers";
+                target = Math.max(1, parseInt(folCfg.target, 10) || 200);
+                current = (CONFIG.twitchData && typeof CONFIG.twitchData.follower_count !== 'undefined') ? parseInt(CONFIG.twitchData.follower_count, 10) : 0;
+                currentStr = current.toLocaleString('fr-FR') + ' followers';
+                targetStr = target.toLocaleString('fr-FR');
+            } else if (activeType === 'subs') {
+                iconClass = 'fa-solid fa-star';
+                const subCfg = CONFIG.goals.subs || {};
+                title = subCfg.title || "Objectif Subs";
+                target = Math.max(1, parseInt(subCfg.target, 10) || 50);
+                current = (window.AppData && typeof window.AppData.dailySubs !== 'undefined') ? window.AppData.dailySubs : 0;
+                currentStr = current.toLocaleString('fr-FR') + ' subs';
+                targetStr = target.toLocaleString('fr-FR');
+            }
+
+            if (iconEl) iconEl.className = iconClass;
+            if (titleEl) titleEl.textContent = title;
+            const percent = Math.min(Math.round((current / target) * 100), 100);
+            if (percentEl) percentEl.textContent = percent + '%';
+            if (fillEl) fillEl.style.width = percent + '%';
+            if (currentEl) currentEl.textContent = currentStr;
+            if (targetEl) targetEl.textContent = targetStr;
+        }
+
+        // Appeler lors des diffusions régie
+        function updateHUD() {
+            updateGoalOverlay();
+        }
+
+        // Vérification initiale et intervalle rapide pour fluidité maximale
+        updateGoalOverlay();
+        setInterval(updateGoalOverlay, 1500);
+    </script>
+</body>
+</html>
